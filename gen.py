@@ -84,7 +84,17 @@ def get(path: str) -> bytes:
         return r.read()
 
 
+def require_server() -> None:
+    """서버가 없으면 띄우는 법을 알려주고 죽는다. 연결 오류 역추적을 보게 두지 않는다."""
+    try:
+        urllib.request.urlopen(f"http://{SERVER}/system_stats", timeout=5)
+    except (urllib.error.URLError, OSError):
+        sys.exit(f"ComfyUI 서버가 {SERVER} 에 없다.\n"
+                 f"  ./serve.sh   ← 띄운다 (본체는 ~/ComfyUI, 이 저장소 밖이다)")
+
+
 def generate(p: dict, name: str) -> Path:
+    require_server()
     client_id = str(uuid.uuid4())
     started = time.time()
     try:
