@@ -1,0 +1,10 @@
+out/
+models/
+.env
+.env.*
+__pycache__/
+.venv/
+venv/
+*.safetensors
+*.ckpt
+.DS_Store
