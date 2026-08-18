@@ -1,0 +1,15 @@
+{
+  "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, full body standing, long blonde hair, pink cardigan, holding a stylus, limited color palette, clean pixel grid, plain flat background",
+  "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+  "model": "sd_xl_base_1.0.safetensors",
+  "lora": "pixel-art-xl.safetensors",
+  "lora_strength": 1.0,
+  "width": 768,
+  "height": 768,
+  "steps": 22,
+  "cfg": 7.0,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "seed": 1234,
+  "elapsed_sec": 93.7
+}
