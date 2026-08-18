@@ -8,11 +8,11 @@ studio_d의 **모든 디자인과 에셋을 만드는 곳**. 대장간이다.
 **본체: `~/ComfyUI`** (약 8.4GB, ComfyUI 0.33.2)
 모델도 그 아래 산다 — `~/ComfyUI/models/checkpoints`, `~/ComfyUI/models/loras`.
 
-여기 넣지 않는 이유는 용량이 아니라 **ComfyUI 자체가 git 저장소**이기 때문이다.
+여기 넣지 않는 이유는 **ComfyUI 자체가 git 저장소**이기 때문이다.
 저장소 안에 저장소가 들어가면 gitlink로 잡히거나 ignore로 덮어야 하고,
 그 안에서 실수로 커밋하거나 `git clean`이 이상하게 돈다. ignore로는 안 풀린다.
 
-부수적으로 — ComfyUI는 런타임이지 내용물이 아니다. node_modules와 같은 범주다.
+부수적으로 — ComfyUI는 런타임이다. node_modules와 같은 범주다.
 이 저장소의 내용물은 프롬프트·스크립트·관측·샘플이고 수백 KB다.
 
 `comfy` CLI에도 기본 워크스페이스로 등록해 뒀다. `comfy which`로 확인한다.
