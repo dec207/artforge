@@ -37,5 +37,7 @@ artforge는 팔레트를 몰라도 된다.
 
 ## 저장소 지도
 
-`studio_d`, `devstory_d`와 형제인 독립 저장소다. 자세한 것은
-`studio_d/README.md`.
+`studio_d`와 형제인 독립 저장소다. 자세한 것은 `studio_d/README.md`.
+
+devstory_d는 2026-08-19에 스튜디오 밖으로 나갔다. 이 문서와 `CLAUDE.md`·`PLAN.md`가
+devstory_d를 근거로 세운 경계들은 납품처가 정해질 때까지 보류다 — `PLAN.md` 상단.
