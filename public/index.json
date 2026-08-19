@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated_at": "2026-08-19T15:00:17Z",
+ "generated_at": "2026-08-19T15:03:05Z",
  "public": true,
  "assets": [
   {
@@ -13,14 +13,15 @@
    "recipe": {
     "checkpoint": "sd_xl_base_1.0.safetensors",
     "lora": "pixel-art-xl.safetensors",
-    "prompt": null,
-    "negative": null,
+    "prompt": "pixel art, a man in his early 30s, short black hair, white dress shirt, navy tie, dark grey slacks, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+    "negative": "pixel art, a man in his early 30s, short black hair, white dress shirt, navy tie, dark grey slacks, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
     "seed": 45120,
     "steps": 28,
     "cfg": 7.5,
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": "openpose-sdxl-xinsir.safetensors",
     "post": []
    },
    "asset": "assets/staff-m1-side_00001.webp"
@@ -35,14 +36,15 @@
    "recipe": {
     "checkpoint": "sd_xl_base_1.0.safetensors",
     "lora": "pixel-art-xl.safetensors",
-    "prompt": null,
-    "negative": null,
+    "prompt": "pixel art, a man in his 40s, glasses, side-parted black hair, charcoal grey suit, light blue shirt, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+    "negative": "pixel art, a man in his 40s, glasses, side-parted black hair, charcoal grey suit, light blue shirt, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
     "seed": 45120,
     "steps": 28,
     "cfg": 7.5,
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": "openpose-sdxl-xinsir.safetensors",
     "post": []
    },
    "asset": "assets/staff-m2-side_00001.webp"
@@ -57,14 +59,15 @@
    "recipe": {
     "checkpoint": "sd_xl_base_1.0.safetensors",
     "lora": "pixel-art-xl.safetensors",
-    "prompt": null,
-    "negative": null,
+    "prompt": "pixel art, a woman in her 30s, black hair in a ponytail, navy blazer, white inner top, grey trousers, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+    "negative": "pixel art, a woman in her 30s, black hair in a ponytail, navy blazer, white inner top, grey trousers, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
     "seed": 45120,
     "steps": 28,
     "cfg": 7.5,
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": "openpose-sdxl-xinsir.safetensors",
     "post": []
    },
    "asset": "assets/staff-f2-side_00001.webp"
@@ -79,14 +82,15 @@
    "recipe": {
     "checkpoint": "sd_xl_base_1.0.safetensors",
     "lora": "pixel-art-xl.safetensors",
-    "prompt": null,
-    "negative": null,
+    "prompt": "pixel art, a woman in her 20s, long straight black hair, light grey cardigan, white blouse, black skirt, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+    "negative": "pixel art, a woman in her 20s, long straight black hair, light grey cardigan, white blouse, black skirt, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
     "seed": 45120,
     "steps": 28,
     "cfg": 7.5,
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": "openpose-sdxl-xinsir.safetensors",
     "post": []
    },
    "asset": "assets/staff-f3-side_00001.webp"
@@ -101,14 +105,15 @@
    "recipe": {
     "checkpoint": "sd_xl_base_1.0.safetensors",
     "lora": "pixel-art-xl.safetensors",
-    "prompt": null,
-    "negative": null,
+    "prompt": "pixel art, a woman in her late 20s, short black bob hair, beige blouse, dark navy skirt, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+    "negative": "pixel art, a woman in her late 20s, short black bob hair, beige blouse, dark navy skirt, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
     "seed": 45120,
     "steps": 28,
     "cfg": 7.5,
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": "openpose-sdxl-xinsir.safetensors",
     "post": []
    },
    "asset": "assets/staff-f1-side_00001.webp"
@@ -131,6 +136,7 @@
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": null,
     "post": []
    },
    "asset": "assets/staff-m2_00001.webp"
@@ -153,6 +159,7 @@
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": null,
     "post": []
    },
    "asset": "assets/staff-f3_00001.webp"
@@ -175,6 +182,7 @@
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": null,
     "post": []
    },
    "asset": "assets/staff-f2_00001.webp"
@@ -197,6 +205,7 @@
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": null,
     "post": []
    },
    "asset": "assets/staff-f1_00001.webp"
@@ -219,6 +228,7 @@
     "sampler": "dpmpp_2m",
     "scheduler": "karras",
     "latent": "832x1216",
+    "controlnet": null,
     "post": []
    },
    "asset": "assets/staff-m1_00001.webp"

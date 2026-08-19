@@ -118,6 +118,29 @@ def deref(graph, val):
     return val if not isinstance(val, list) else None
 
 
+def find_text(graph, link, depth=0):
+    """조건(conditioning) 링크를 거슬러 CLIPTextEncode 의 문구를 찾는다.
+
+    ControlNet 을 끼우면 KSampler 의 positive 가 CLIPTextEncode 가 아니라
+    ControlNetApplyAdvanced 를 가리킨다. 중간 노드를 건너뛰며 끝까지 따라간다.
+    """
+    if not (isinstance(link, list) and len(link) == 2) or depth > 8:
+        return None
+    node = graph.get(str(link[0]))
+    if not node:
+        return None
+    ins = node.get("inputs", {})
+    if node.get("class_type", "").startswith("CLIPTextEncode"):
+        return deref(graph, ins.get("text"))
+    # 조건을 통과시키는 노드들 — 들어온 자리와 같은 이름의 입력을 따라간다
+    for key in ("conditioning", "positive", "negative"):
+        if key in ins:
+            got = find_text(graph, ins[key], depth + 1)
+            if got:
+                return got
+    return None
+
+
 def ancestors(graph, start_id):
     """start_id 에서 입력 링크를 거슬러 닿는 모든 노드 id (도달 순서 보존)."""
     order, seen, stack = [], set(), [str(start_id)]
@@ -168,7 +191,8 @@ def extract_recipe(graph, save_id):
     reach = ancestors(graph, save_id)
     r = {"checkpoint": None, "lora": None, "prompt": None, "negative": None,
          "seed": None, "steps": None, "cfg": None, "sampler": None,
-         "scheduler": None, "latent": None, "post": post_chain(graph, save_id)}
+         "scheduler": None, "latent": None, "controlnet": None,
+         "post": post_chain(graph, save_id)}
 
     ckpts, samplers = [], []
     for nid in reach:
@@ -180,6 +204,8 @@ def extract_recipe(graph, save_id):
             r["lora"] = ins.get("lora_name")
         elif ct == "EmptyLatentImage":
             r["latent"] = f"{ins.get('width')}x{ins.get('height')}"
+        elif ct == "ControlNetLoader":
+            r["controlnet"] = ins.get("control_net_name")
         elif ct in ("KSampler", "KSamplerAdvanced"):
             samplers.append((nid, ct, ins))
 
@@ -195,13 +221,10 @@ def extract_recipe(graph, save_id):
         r["seed"] = ins.get("seed") if ct == "KSampler" else ins.get("noise_seed")
         r["steps"], r["cfg"] = ins.get("steps"), ins.get("cfg")
         r["sampler"], r["scheduler"] = ins.get("sampler_name"), ins.get("scheduler")
-        pos, neg = ins.get("positive"), ins.get("negative")
-        for key, link in (("prompt", pos), ("negative", neg)):
-            if isinstance(link, list) and len(link) == 2:
-                tnode = graph.get(str(link[0]), {})
-                txt = deref(graph, tnode.get("inputs", {}).get("text"))
-                if isinstance(txt, str) and not r[key]:
-                    r[key] = txt
+        for key, link in (("prompt", ins.get("positive")), ("negative", ins.get("negative"))):
+            txt = find_text(graph, link)
+            if isinstance(txt, str) and not r[key]:
+                r[key] = txt
         if r["prompt"]:
             break
     return r

@@ -54,6 +54,7 @@
         if (a.expires_at && Date.parse(a.expires_at) - Date.now() < 7 * DAY) out.push('만료 임박');
         if (a.original === null) out.push('원본 만료됨');
         if (a.recipe?.post?.length) out.push('후처리 있음');
+        out.push(a.recipe?.controlnet ? '포즈 고정(ControlNet)' : '프롬프트만');
         return out;
       },
     },
@@ -197,7 +198,8 @@
       ['MODEL', r.checkpoint], ['LORA', r.lora],
       ['SEED', r.seed], ['SAMPLER', [r.sampler, r.scheduler].filter(Boolean).join(' · ')],
       ['STEPS', [r.steps && r.steps + ' steps', r.cfg != null && 'cfg ' + r.cfg].filter(Boolean).join(' · ')],
-      ['LATENT', r.latent], ['POST', (r.post || []).join(' → ')],
+      ['LATENT', r.latent], ['CONTROLNET', short(r.controlnet)],
+      ['POST', (r.post || []).join(' → ')],
       ['만료', dead ? '만료됨' : (a.expires_at ? a.expires_at.slice(0, 10) : '면제 (플래그)')],
     ].filter(([, v]) => v !== undefined && v !== null && v !== '');
 
