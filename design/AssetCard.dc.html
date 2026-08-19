@@ -1,0 +1,72 @@
+<!-- @dsCard group="Components" name="Asset card" subtitle="썸네일 · 배지 · 플래그 · 압출 호버" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; background: #0B0D0F; }</style>
+</helmet>
+<div style="background: #0B0D0F; padding: 24px; font-family: 'IBM Plex Mono', ui-monospace, monospace;">
+  <a href="#" style="
+      display: flex; flex-direction: column; gap: {{ u }}px;
+      width: {{ w }}px; text-decoration: none; color: #E9E6E0;
+      background: #0B0D0F; border: 1px solid {{ border }};
+      padding: {{ u }}px; box-shadow: {{ lift }};">
+
+    <span style="position: relative; display: block; width: 100%; aspect-ratio: 1 / 1; background: #000; overflow: hidden;">
+      <img src="{{ thumb }}" alt="" style="width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block;">
+      <sc-if value="{{ flagged }}" hint-placeholder-val="{{ true }}">
+        <i style="position: absolute; top: {{ u }}px; right: {{ u }}px; width: {{ u }}px; height: {{ u }}px; background: #5EC8C4;" title="공개 플래그"></i>
+      </sc-if>
+      <sc-if value="{{ expiring }}" hint-placeholder-val="{{ false }}">
+        <i style="position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: #B3AEA6;"></i>
+      </sc-if>
+    </span>
+
+    <span style="font-size: 12px; font-weight: 500; letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ id }}</span>
+    <span style="font-size: 11px; color: #B3AEA6; line-height: 1.5; height: 33px; overflow: hidden;">{{ desc }}</span>
+
+    <span style="display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; min-height: {{ badgeH }}px;">
+      <sc-for list="{{ badges }}" as="b" hint-placeholder-count="3">
+        <i style="font-style: normal; font-size: 10px; letter-spacing: .06em; color: #B3AEA6; border: 1px solid #39414A; padding: 2px 6px;">{{ b }}</i>
+      </sc-for>
+    </span>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 320, &quot;height&quot;: 340}, &quot;u&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 8, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 4, &quot;max&quot;: 16, &quot;unit&quot;: &quot;px&quot;}, &quot;w&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 260, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 160, &quot;max&quot;: 400, &quot;unit&quot;: &quot;px&quot;}, &quot;id&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;cmp-B-area-quant_00001&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;desc&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;pixel art, a knight character standing, front view, simple flat colors&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;size&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;1024×1024&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;model&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;sdxl-base&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;lora&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;pixel-art-xl&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;thumb&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;flagged&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;}, &quot;expiring&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;}, &quot;hover&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const u = Number(this.props.u ?? 8);
+    const hover = !!this.props.hover;
+    const flagged = !!this.props.flagged;
+    // 깊이 표현은 1u 하드 압출 하나뿐 — blur 0, 오른쪽·아래 고정
+    const lift = hover ? (u/2) + 'px ' + (u/2) + 'px 0 #39414A' : 'none';
+    const border = hover ? '#B3AEA6' : '#39414A';
+    const size = this.props.size ?? '1024×1024';
+    const model = this.props.model ?? 'sdxl-base';
+    const lora = this.props.lora ?? '';
+    const badges = [size, model].concat(lora ? ['+ ' + lora] : []);
+    const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16' shape-rendering='crispEdges'%3E%3Crect width='20' height='16' fill='%230B0D0F'/%3E%3Cg fill='%2339414A'%3E%3Crect x='8' y='3' width='4' height='3'/%3E%3Crect x='7' y='6' width='6' height='5'/%3E%3Crect x='6' y='7' width='1' height='3'/%3E%3Crect x='13' y='7' width='1' height='3'/%3E%3Crect x='8' y='11' width='2' height='2'/%3E%3Crect x='11' y='11' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E";
+    return {
+      // 배지 줄 수가 LoRA 유무로 달라져 카드 높이가 어긋난다 — 2줄분을 미리 잡는다
+      u, lift, border, flagged, badges, badgeH: u * 5,
+      w: Number(this.props.w ?? 260),
+      id: this.props.id ?? 'cmp-B-area-quant_00001',
+      desc: this.props.desc ?? 'pixel art, a knight character standing, front view, simple flat colors',
+      thumb: this.props.thumb || fallback,
+      expiring: !!this.props.expiring,
+    };
+  }
+}
+</script>
+</body>
+</html>

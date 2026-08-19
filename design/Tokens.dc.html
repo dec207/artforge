@@ -1,0 +1,89 @@
+<!-- @dsCard group="Foundations" name="Tokens" subtitle="색 · 1u 간격 · 압출 · 타입 스케일" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; background: #0B0D0F; }</style>
+</helmet>
+<div style="background: #0B0D0F; color: #E9E6E0; font-family: 'IBM Plex Mono', ui-monospace, monospace; padding: 40px; display: flex; flex-direction: column; gap: 40px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 11px; letter-spacing: .3em; color: #39414A;">TOKENS</span>
+    <span style="font-size: 20px; font-weight: 500; letter-spacing: .02em;">artforge store</span>
+    <span style="font-size: 12px; color: #B3AEA6; font-family: 'Noto Sans KR', sans-serif;">확정값은 여기에만 존재한다 · Logo Guide v1.0</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span style="font-size: 11px; letter-spacing: .3em; color: #39414A;">COLOR</span>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 132px;">
+          <i style="display: block; height: 56px; background: {{ s.hex }}; border: 1px solid #39414A;"></i>
+          <span style="font-size: 12px; font-weight: 500;">{{ s.name }}</span>
+          <span style="font-size: 11px; color: #B3AEA6;">{{ s.hex }}</span>
+          <span style="font-size: 10px; color: #39414A; font-family: 'Noto Sans KR', sans-serif; line-height: 1.5;">{{ s.role }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span style="font-size: 11px; letter-spacing: .3em; color: #39414A;">SPACING · 1u = {{ u }}px</span>
+    <div style="display: flex; align-items: flex-end; gap: 12px;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <i style="display: block; width: {{ st.px }}px; height: 20px; background: #39414A;"></i>
+          <span style="font-size: 10px; color: #B3AEA6;">{{ st.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span style="font-size: 11px; letter-spacing: .3em; color: #39414A;">DEPTH — 압출 1u · blur 0</span>
+    <div style="display: flex; gap: 32px; align-items: flex-start;">
+      <div style="width: 120px; height: 72px; background: #0B0D0F; border: 1px solid #39414A;"></div>
+      <div style="width: 120px; height: 72px; background: #0B0D0F; border: 1px solid #B3AEA6; box-shadow: {{ u }}px {{ u }}px 0 #39414A;"></div>
+      <span style="font-size: 11px; color: #39414A; font-family: 'Noto Sans KR', sans-serif; line-height: 1.7; max-width: 300px;">부드러운 그림자·그라디언트·외곽선은 금지 조항이다. 허용된 깊이 표현은 오른쪽·아래 1u 하드 압출 하나뿐이다.</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span style="font-size: 11px; letter-spacing: .3em; color: #39414A;">TYPE</span>
+    <span style="font-size: 28px; font-weight: 500; letter-spacing: .02em;">studio<i style="font-style: normal; color: #5EC8C4;">_</i>d — 34/500/.02em</span>
+    <span style="font-size: 13px; letter-spacing: .30em; color: #B3AEA6;">TAGLINE 13/400/.30em</span>
+    <span style="font-size: 12px;">BODY 12/400 — IBM Plex Mono</span>
+    <span style="font-size: 11px; letter-spacing: .3em; color: #39414A;">LABEL 11/400/.3em</span>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 720, &quot;height&quot;: 640}, &quot;u&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 8, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 4, &quot;max&quot;: 16, &quot;unit&quot;: &quot;px&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const u = Number(this.props.u ?? 8);
+    return {
+      u,
+      swatches: [
+        { name: 'Ink',       hex: '#0B0D0F', role: '배경 · 단색 인쇄' },
+        { name: 'Paper',     hex: '#E9E6E0', role: '글자 앞면 · 본문' },
+        { name: 'Shade',     hex: '#39414A', role: '압출면 · 테두리 · 보조' },
+        { name: 'Shade/lt',  hex: '#B3AEA6', role: '밝은 배경 압출 · 부제' },
+        { name: 'Accent',    hex: '#5EC8C4', role: '언더스코어 · 플래그 전용' },
+      ],
+      steps: [1,2,3,4,6,8].map(n => ({ px: n*u, label: n + 'u' })),
+    };
+  }
+}
+</script>
+</body>
+</html>

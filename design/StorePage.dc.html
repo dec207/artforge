@@ -1,0 +1,91 @@
+<!-- @dsCard group="Pages" name="Store page" subtitle="헤더 · 사이드바 · 그리드 · 빈 상태" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; background: #0B0D0F; }</style>
+</helmet>
+<div style="background: #0B0D0F; color: #E9E6E0; font-family: 'IBM Plex Mono', ui-monospace, monospace; min-height: 100vh; display: flex; flex-direction: column;">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: {{ u3 }}px {{ u4 }}px; border-bottom: 1px solid #39414A;">
+    <span style="display: flex; align-items: center; gap: 10px;">
+      <dc-import name="PixelD" cell="4" gap="1" face="#E9E6E0" shade="#39414A" hint-size="29px,29px"></dc-import>
+      <span style="font-size: 15px; font-weight: 500; letter-spacing: .02em;">artforge</span>
+      <span style="font-size: 10px; letter-spacing: .28em; color: #39414A;">ASSET STORE</span>
+    </span>
+    <span style="display: flex; gap: {{ u2 }}px; font-size: 11px; color: #B3AEA6;">
+      <sc-for list="{{ sorts }}" as="s" hint-placeholder-count="3">
+        <a href="#" style="text-decoration: none; color: {{ s.color }};">{{ s.name }}</a>
+      </sc-for>
+    </span>
+  </header>
+
+  <div style="display: flex; gap: {{ u4 }}px; padding: {{ u4 }}px; align-items: flex-start; flex: 1;">
+    <aside style="flex: none;">
+      <dc-import name="FilterBar" w="200" hint-size="248px,520px"></dc-import>
+    </aside>
+
+    <main style="flex: 1; display: flex; flex-direction: column; gap: {{ u3 }}px;">
+      <span style="font-size: 11px; letter-spacing: .2em; color: #39414A;">{{ countLabel }}</span>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 1px solid #39414A; padding: {{ u8 }}px; display: flex; flex-direction: column; align-items: center; gap: {{ u2 }}px; text-align: center;">
+          <dc-import name="PixelD" cell="6" gap="1" face="#39414A" shade="none" hint-size="34px,34px"></dc-import>
+          <span style="font-size: 13px; font-family: 'Noto Sans KR', sans-serif;">아직 아무것도 없다</span>
+          <span style="font-size: 11px; color: #39414A; font-family: 'Noto Sans KR', sans-serif; line-height: 1.8; max-width: 380px;">ComfyUI로 이미지를 만들면 스토어를 열 때 자동으로 들어온다. 따로 옮기지 않아도 된다.</span>
+          <code style="font-size: 11px; color: #B3AEA6; border: 1px solid #39414A; padding: 6px 10px;">./forge</code>
+        </div>
+      </sc-if>
+      <!-- sc-else 는 이 런타임에 핸들러가 없다(정규식에만 존재) — 반전 조건 sc-if 를 쓴다 -->
+      <sc-if value="{{ notEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: {{ u3 }}px;">
+          <sc-for list="{{ cards }}" as="c" hint-placeholder-count="6">
+            <dc-import name="AssetCard" w="220" id="{{ c.id }}" desc="{{ c.desc }}" size="{{ c.size }}" model="{{ c.model }}" lora="{{ c.lora }}" flagged="{{ c.flagged }}" hint-size="238px,310px"></dc-import>
+          </sc-for>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1120, &quot;height&quot;: 760}, &quot;u&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 8, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 4, &quot;max&quot;: 16, &quot;unit&quot;: &quot;px&quot;}, &quot;empty&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;}, &quot;count&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 11, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 0, &quot;max&quot;: 9999}, &quot;sort&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;최신순&quot;, &quot;tsType&quot;: &quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const u = Number(this.props.u ?? 8);
+    const empty = !!this.props.empty;
+    const n = Number(this.props.count ?? 11);
+    const sortActive = this.props.sort ?? '최신순';
+    const sorts = ['최신순', '오래된순', '큰 것부터'].map(name => ({
+      name, color: name === sortActive ? '#E9E6E0' : '#39414A',
+    }));
+    const seed = [
+      ['artforge_00001', 'chibi game designer character, turnaround sheet', '1024×1024', 'pixel-art-xl', true],
+      ['artforge_00003', 'chibi programmer character, front view', '1024×1024', 'pixel-art-xl', false],
+      ['artforge-smoke_00001', 'a cozy blacksmith forge interior, glowing anvil', '1024×1024', '', false],
+      ['cmp-0-source_00001', 'pixel art, a knight character standing, front view', '1024×1024', 'pixel-art-xl', false],
+      ['cmp-A-nn-only_00001', 'nearest-exact 64 다운스케일 · 720색', '512×512', 'pixel-art-xl', false],
+      ['cmp-B-area-quant_00001', 'area 64 + ImageQuantize 24 · 22색', '512×512', 'pixel-art-xl', true],
+    ];
+    const cards = seed.map(([id, desc, size, lora, flagged]) => ({
+      id, desc, size, lora, flagged, model: 'sdxl-base',
+    }));
+    return {
+      u, u2: u*2, u3: u*3, u4: u*4, u8: u*8,
+      empty, notEmpty: !empty, sorts, cards,
+      countLabel: empty ? '0개' : n + '개',
+    };
+  }
+}
+</script>
+</body>
+</html>

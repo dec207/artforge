@@ -1,0 +1,41 @@
+<!-- @dsCard group="Brand" name="PixelD 심볼" subtitle="5×5 소문자 d · 압출 1u" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display: flex; flex-direction: column; gap: {{ gap }}px;">
+  <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+    <div style="display: flex; gap: {{ gap }}px;">
+      <sc-for list="{{ row }}" as="c" hint-placeholder-count="6">
+        <i style="width: {{ cell }}px; height: {{ cell }}px; background: {{ c.bg }};"></i>
+      </sc-for>
+    </div>
+  </sc-for>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:60,&quot;height&quot;:60},&quot;cell&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:8,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:1,&quot;max&quot;:40,&quot;unit&quot;:&quot;px&quot;},&quot;gap&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:0,&quot;max&quot;:6,&quot;unit&quot;:&quot;px&quot;},&quot;face&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e9e6e0&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#e9e6e0&quot;,&quot;#101215&quot;]},&quot;shade&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#39414a&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#39414a&quot;,&quot;#b3aea6&quot;,&quot;none&quot;]}}">
+class Component extends DCLogic {
+  renderVals() {
+    // confirmed mark: 5×5 lowercase d, outer silhouette extruded one unit right/down
+    const M = ['....F.', '.FFFFS', 'F...FS', 'F...FS', '.FFFFS', '..SSSS'];
+    const face = this.props.face ?? '#e9e6e0';
+    const shade = this.props.shade ?? '#39414a';
+    const flat = shade === 'none';
+    const cell = Number(this.props.cell ?? 8);
+    const gap = Number(this.props.gap ?? 1);
+    const rows = M.map(r => r.split('').map(ch => ({
+      bg: ch === 'F' ? face : (ch === 'S' && !flat ? shade : 'transparent')
+    })));
+    return { rows, cell, gap };
+  }
+}
+
+</script>
+</body>
+</html>

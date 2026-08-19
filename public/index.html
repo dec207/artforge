@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>artforge — studio_d 에셋 스토어</title>
+<meta name="description" content="studio_d가 ComfyUI로 만든 에셋을 모아 보는 곳.">
+<meta name="theme-color" content="#0B0D0F">
+<!-- 요금제상 프로덕션에 자물쇠를 못 단다. 색인만이라도 막는다 — 접근 제어가 아니다 -->
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="artforge — studio_d 에셋 스토어">
+<meta property="og:description" content="studio_d가 ComfyUI로 만든 에셋을 모아 보는 곳.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%20shape-rendering='crispEdges'%3E%3Crect%20width='64'%20height='64'%20fill='%230B0D0F'/%3E%3Cg%20fill='%23E9E6E0'%3E%3Crect%20x='49'%20y='5'%20width='10'%20height='10'/%3E%3Crect%20x='16'%20y='16'%20width='10'%20height='10'/%3E%3Crect%20x='27'%20y='16'%20width='10'%20height='10'/%3E%3Crect%20x='38'%20y='16'%20width='10'%20height='10'/%3E%3Crect%20x='49'%20y='16'%20width='10'%20height='10'/%3E%3Crect%20x='5'%20y='27'%20width='10'%20height='10'/%3E%3Crect%20x='49'%20y='27'%20width='10'%20height='10'/%3E%3Crect%20x='5'%20y='38'%20width='10'%20height='10'/%3E%3Crect%20x='49'%20y='38'%20width='10'%20height='10'/%3E%3Crect%20x='16'%20y='49'%20width='10'%20height='10'/%3E%3Crect%20x='27'%20y='49'%20width='10'%20height='10'/%3E%3Crect%20x='38'%20y='49'%20width='10'%20height='10'/%3E%3Crect%20x='49'%20y='49'%20width='10'%20height='10'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500&display=swap">
+<link rel="stylesheet" href="store.css">
+<script defer src="store.js"></script>
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="./">
+    <!-- 5×5 소문자 d · 압출 1u — 29px 라 18px 규정을 넘어 그림자를 유지한다 -->
+    <svg class="sym" viewBox="0 0 29 29" shape-rendering="crispEdges" aria-hidden="true">
+      <g fill="#39414A"><rect x="25" y="5" width="4" height="4"/><rect x="25" y="10" width="4" height="4"/><rect x="25" y="15" width="4" height="4"/><rect x="25" y="20" width="4" height="4"/><rect x="10" y="25" width="4" height="4"/><rect x="15" y="25" width="4" height="4"/><rect x="20" y="25" width="4" height="4"/><rect x="25" y="25" width="4" height="4"/></g>
+      <g fill="#E9E6E0"><rect x="20" y="0" width="4" height="4"/><rect x="5" y="5" width="4" height="4"/><rect x="10" y="5" width="4" height="4"/><rect x="15" y="5" width="4" height="4"/><rect x="20" y="5" width="4" height="4"/><rect x="0" y="10" width="4" height="4"/><rect x="20" y="10" width="4" height="4"/><rect x="0" y="15" width="4" height="4"/><rect x="20" y="15" width="4" height="4"/><rect x="5" y="20" width="4" height="4"/><rect x="10" y="20" width="4" height="4"/><rect x="15" y="20" width="4" height="4"/><rect x="20" y="20" width="4" height="4"/></g>
+    </svg>
+    <span class="mark">artforge</span>
+    <span class="kicker">ASSET STORE</span>
+  </a>
+  <nav class="sorts" id="sorts" aria-label="정렬"></nav>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <label class="search">
+      <input id="q" type="search" placeholder="검색" autocomplete="off" spellcheck="false">
+    </label>
+    <div id="facets"></div>
+  </aside>
+
+  <main class="main">
+    <p class="count" id="count" aria-live="polite"></p>
+    <section class="grid" id="grid"></section>
+    <section class="empty" id="empty" hidden>
+      <svg class="sym sym--mute" viewBox="0 0 34 34" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="#39414A"><rect x="24" y="0" width="5" height="5"/><rect x="6" y="6" width="5" height="5"/><rect x="12" y="6" width="5" height="5"/><rect x="18" y="6" width="5" height="5"/><rect x="24" y="6" width="5" height="5"/><rect x="0" y="12" width="5" height="5"/><rect x="24" y="12" width="5" height="5"/><rect x="0" y="18" width="5" height="5"/><rect x="24" y="18" width="5" height="5"/><rect x="6" y="24" width="5" height="5"/><rect x="12" y="24" width="5" height="5"/><rect x="18" y="24" width="5" height="5"/><rect x="24" y="24" width="5" height="5"/></g>
+      </svg>
+      <p class="empty-h" id="empty-h">아직 아무것도 없다</p>
+      <p class="empty-b" id="empty-b">ComfyUI로 이미지를 만들면 스토어를 열 때 자동으로 들어온다. 따로 옮기지 않아도 된다.</p>
+      <code class="empty-c" id="empty-c">./forge</code>
+    </section>
+  </main>
+</div>
+
+<dialog class="panel" id="panel"></dialog>
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+</body>
+</html>

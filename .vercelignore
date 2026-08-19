@@ -1,0 +1,7 @@
+catalog/
+design/
+web/
+forge
+.claude/
+.gstack/
+.DS_Store

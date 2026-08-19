@@ -1,0 +1,5 @@
+{
+ "retain_days": 30,
+ "comfy_url": "http://127.0.0.1:8188",
+ "port": 8420
+}

@@ -1,0 +1,194 @@
+/* artforge 에셋 스토어
+ *
+ * 확정값(팔레트·자간)은 :root 에만 존재한다. 아래 어디에서도 다시 적지 않는다.
+ * Logo Guide v1.0 의 금지 조항이 이 파일을 직접 제약한다 —
+ * 그라디언트·외곽선·드롭섀도 추가 금지. 허용된 깊이 표현은
+ * 오른쪽·아래 1u 하드 압출(blur 0) 하나뿐이다.
+ */
+
+:root {
+  /* 팔레트 — Logo Guide 확정값 */
+  --ink:     #0B0D0F;   /* 배경 */
+  --paper:   #E9E6E0;   /* 글자 앞면 · 본문 */
+  --shade:   #39414A;   /* 압출면 · 테두리 · 보조 */
+  --shade-l: #B3AEA6;   /* 부제 · 배지 */
+  --accent:  #5EC8C4;   /* 언더스코어 · 플래그 전용. 다른 어디에도 쓰지 않는다 */
+
+  /* 자간 — 확정값 */
+  --ls-name: .02em;
+  --ls-kick: .28em;
+
+  --u: 8px;             /* 1u. 모든 간격은 이 배수다 */
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --kr: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* 아래에서 display:flex/grid 를 주는 요소가 있다. 작성자 규칙이 UA 의
+ * [hidden]{display:none} 을 이기므로 hidden 속성이 무력해진다 — 여기서 되살린다. */
+[hidden] { display: none !important; }
+
+html { background: var(--ink); }
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono), var(--kr);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; }
+
+/* ── 헤더 ─────────────────────────────────────────────── */
+.bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+  border-bottom: 1px solid var(--shade);
+  position: sticky; top: 0; z-index: 5; background: var(--ink);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.sym { display: block; width: 29px; height: 29px; flex: none; }
+.sym--mute { width: 34px; height: 34px; }
+.mark { font-size: 15px; font-weight: 500; letter-spacing: var(--ls-name); }
+.kicker { font-size: 10px; letter-spacing: var(--ls-kick); color: var(--shade); }
+
+.sorts { display: flex; gap: calc(var(--u) * 2); }
+.sorts button {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-size: 11px; color: var(--shade);
+}
+.sorts button[aria-pressed="true"] { color: var(--paper); }
+
+/* ── 레이아웃 ─────────────────────────────────────────── */
+.shell {
+  display: flex; align-items: flex-start;
+  gap: calc(var(--u) * 4); padding: calc(var(--u) * 4);
+}
+.side { flex: none; width: 200px; position: sticky; top: calc(var(--u) * 11); }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: calc(var(--u) * 3); }
+
+/* ── 사이드바 ─────────────────────────────────────────── */
+.search input {
+  width: 100%; background: var(--ink); border: 1px solid var(--shade);
+  padding: var(--u); outline: none;
+}
+.search input:focus { border-color: var(--shade-l); }
+
+.facet { display: flex; flex-direction: column; gap: var(--u); margin-top: calc(var(--u) * 3); }
+.facet h2 { margin: 0; font-size: 10px; font-weight: 400; letter-spacing: var(--ls-kick); color: var(--shade); }
+.facet button {
+  display: flex; justify-content: space-between; align-items: baseline; gap: var(--u);
+  width: 100%; background: none; border: 0; cursor: pointer; text-align: left;
+  padding: 3px 0 3px var(--u);
+  border-left: 2px solid transparent; color: var(--shade-l);
+}
+/* 활성 표시는 Shade — Accent 는 플래그 하나에만 쓴다 */
+.facet button[aria-pressed="true"] { color: var(--paper); border-left-color: var(--shade-l); }
+.facet .n { font-size: 10px; color: var(--shade); }
+
+.count { margin: 0; font-size: 11px; letter-spacing: .2em; color: var(--shade); }
+
+/* ── 그리드 ───────────────────────────────────────────── */
+.grid {
+  display: grid; gap: calc(var(--u) * 3);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.card {
+  display: flex; flex-direction: column; gap: var(--u);
+  padding: var(--u); background: var(--ink);
+  border: 1px solid var(--shade); cursor: pointer; text-align: left;
+  /* 압출은 항상 오른쪽·아래 1u, blur 0. transition 은 그림자에만 건다 */
+  box-shadow: 0 0 0 var(--shade);
+  transition: box-shadow .08s steps(2), border-color .08s;
+}
+.card:hover, .card:focus-visible {
+  border-color: var(--shade-l);
+  box-shadow: var(--u) var(--u) 0 var(--shade);
+  outline: none;
+}
+.shot {
+  position: relative; display: block; width: 100%;
+  aspect-ratio: 1 / 1; background: #000; overflow: hidden;
+}
+.shot img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  image-rendering: pixelated;   /* 픽셀 아트가 보간으로 뭉개지면 안 된다 */
+}
+/* 플래그 = 로고 격자의 한 칸. 액센트를 쓰는 유일한 자리다 */
+.flag {
+  position: absolute; top: var(--u); right: var(--u);
+  width: var(--u); height: var(--u); background: var(--accent);
+}
+.soon { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--shade-l); }
+.dead { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--shade); }
+
+.name { font-size: 12px; font-weight: 500; letter-spacing: var(--ls-name);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desc { font-size: 11px; color: var(--shade-l); line-height: 1.5;
+        height: 33px; overflow: hidden; }
+/* 배지 줄 수가 LoRA 유무로 갈려 카드 높이가 어긋난다 — 2줄분을 미리 잡는다 */
+.tags { display: flex; flex-wrap: wrap; align-content: flex-start;
+        gap: 4px; min-height: calc(var(--u) * 5); }
+.tag { font-size: 10px; letter-spacing: .06em; color: var(--shade-l);
+       border: 1px solid var(--shade); padding: 2px 6px; }
+
+/* ── 빈 상태 ──────────────────────────────────────────── */
+.empty {
+  border: 1px solid var(--shade); padding: calc(var(--u) * 8);
+  display: flex; flex-direction: column; align-items: center;
+  gap: calc(var(--u) * 2); text-align: center;
+}
+.empty-h { margin: 0; font-size: 13px; font-family: var(--kr); }
+.empty-b { margin: 0; max-width: 380px; font-size: 11px; line-height: 1.8;
+           color: var(--shade); font-family: var(--kr); }
+.empty-c { border: 1px solid var(--shade); padding: 6px 10px; color: var(--shade-l); }
+
+/* ── 상세 패널 ────────────────────────────────────────── */
+.panel {
+  width: min(560px, calc(100vw - var(--u) * 8)); padding: 0;
+  background: var(--ink); color: var(--paper);
+  border: 1px solid var(--shade-l);
+  box-shadow: var(--u) var(--u) 0 var(--shade);   /* 같은 압출 규칙 */
+}
+.panel::backdrop { background: rgba(11, 13, 15, .82); }
+.panel-h {
+  display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2); border-bottom: 1px solid var(--shade);
+}
+.panel-h .name { font-size: 13px; }
+.panel-h .right { display: flex; align-items: center; gap: var(--u); flex: none; }
+.panel-x { background: none; border: 1px solid var(--shade); cursor: pointer;
+           padding: 4px 8px; font-size: 11px; color: var(--shade-l); }
+.panel-shot { background: #000; padding: calc(var(--u) * 2);
+              display: flex; align-items: center; justify-content: center; }
+.panel-shot img { max-width: 100%; max-height: 300px; display: block; image-rendering: pixelated; }
+.panel-note { margin: 0; padding: var(--u) calc(var(--u) * 2);
+              border-bottom: 1px solid var(--shade);
+              font-size: 11px; color: var(--shade-l); font-family: var(--kr); }
+.spec { margin: 0; padding: calc(var(--u) * 2); display: grid;
+        grid-template-columns: 84px 1fr; gap: 6px calc(var(--u) * 2); font-size: 11px; }
+.spec dt { color: var(--shade); letter-spacing: .1em; }
+.spec dd { margin: 0; color: var(--shade-l); line-height: 1.6; word-break: break-word; }
+.acts { display: flex; flex-wrap: wrap; gap: var(--u);
+        padding: calc(var(--u) * 2); border-top: 1px solid var(--shade); }
+.acts button { background: var(--ink); border: 1px solid var(--shade); cursor: pointer;
+               padding: 6px 10px; font-size: 11px; letter-spacing: .06em; }
+.acts button:hover { border-color: var(--shade-l); }
+.acts button.on { border-color: var(--accent); color: var(--accent); }
+
+/* ── 토스트 ───────────────────────────────────────────── */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--u) * 4); transform: translateX(-50%);
+  margin: 0; padding: var(--u) calc(var(--u) * 2); z-index: 20;
+  background: var(--ink); border: 1px solid var(--shade-l); font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .shell { flex-direction: column; padding: calc(var(--u) * 2); }
+  .side { position: static; width: 100%; }
+}

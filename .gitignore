@@ -1,13 +1,8 @@
-out/
-models/
-.env
-.env.*
+catalog/originals/
+.DS_Store
+.claude/
+.gstack/
 __pycache__/
 .venv/
-venv/
 *.safetensors
 *.ckpt
-.DS_Store
-
-# out/ 은 작업장, samples/ 는 골라 남긴 증거 — samples는 추적한다
-!samples/

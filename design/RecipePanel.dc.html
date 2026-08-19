@@ -1,0 +1,84 @@
+<!-- @dsCard group="Components" name="Recipe panel" subtitle="원본 · 레시피 · 복사 동작" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>body { margin: 0; background: #0B0D0F; }</style>
+</helmet>
+<div style="background: #0B0D0F; padding: 24px; font-family: 'IBM Plex Mono', ui-monospace, monospace; color: #E9E6E0;">
+  <div style="width: {{ w }}px; border: 1px solid #39414A; display: flex; flex-direction: column;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: {{ u2 }}px; border-bottom: 1px solid #39414A;">
+      <span style="font-size: 13px; font-weight: 500; letter-spacing: .02em;">{{ id }}</span>
+      <sc-if value="{{ flagged }}" hint-placeholder-val="{{ true }}">
+        <i style="width: {{ u }}px; height: {{ u }}px; background: #5EC8C4; display: block;" title="공개 플래그"></i>
+      </sc-if>
+    </div>
+
+    <div style="background: #000; display: flex; align-items: center; justify-content: center; padding: {{ u2 }}px;">
+      <img src="{{ thumb }}" alt="" style="max-width: 100%; max-height: 240px; image-rendering: pixelated; display: block;">
+    </div>
+
+    <sc-if value="{{ expired }}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 11px; color: #B3AEA6; font-family: 'Noto Sans KR', sans-serif; padding: {{ u }}px {{ u2 }}px; border-bottom: 1px solid #39414A;">원본은 만료됐다. 레시피로 다시 만들 수 있다.</span>
+    </sc-if>
+
+    <div style="display: flex; flex-direction: column; padding: {{ u2 }}px; gap: 6px;">
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+        <div style="display: flex; gap: {{ u2 }}px; font-size: 11px; line-height: 1.6;">
+          <span style="width: 84px; flex: none; color: #39414A; letter-spacing: .1em;">{{ r.k }}</span>
+          <span style="color: #B3AEA6; word-break: break-word;">{{ r.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: {{ u }}px; padding: {{ u2 }}px; border-top: 1px solid #39414A;">
+      <sc-for list="{{ actions }}" as="a" hint-placeholder-count="4">
+        <button style="
+          font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: .06em; cursor: pointer;
+          background: #0B0D0F; color: #E9E6E0; border: 1px solid #39414A; padding: 6px 10px;">{{ a }}</button>
+      </sc-for>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 480, &quot;height&quot;: 660}, &quot;u&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 8, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 4, &quot;max&quot;: 16, &quot;unit&quot;: &quot;px&quot;}, &quot;w&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 420, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 300, &quot;max&quot;: 640, &quot;unit&quot;: &quot;px&quot;}, &quot;id&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;cmp-B-area-quant_00001&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;prompt&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;thumb&quot;: {&quot;editor&quot;: &quot;string&quot;, &quot;default&quot;: &quot;&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;flagged&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;}, &quot;expired&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const u = Number(this.props.u ?? 8);
+    const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16' shape-rendering='crispEdges'%3E%3Crect width='20' height='16' fill='%230B0D0F'/%3E%3Cg fill='%2339414A'%3E%3Crect x='8' y='3' width='4' height='3'/%3E%3Crect x='7' y='6' width='6' height='5'/%3E%3Crect x='6' y='7' width='1' height='3'/%3E%3Crect x='13' y='7' width='1' height='3'/%3E%3Crect x='8' y='11' width='2' height='2'/%3E%3Crect x='11' y='11' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E";
+    const rows = [
+      { k: 'PROMPT',   v: this.props.prompt ?? 'pixel art, a knight character standing, front view, simple flat colors, dark outline, game sprite' },
+      { k: 'NEGATIVE', v: 'blurry, jpeg artifacts, watermark, text, signature' },
+      { k: 'MODEL',    v: 'sd_xl_base_1.0.safetensors' },
+      { k: 'LORA',     v: 'pixel-art-xl.safetensors · 1.0' },
+      { k: 'SEED',     v: '777' },
+      { k: 'SAMPLER',  v: 'dpmpp_2m · karras · 25 steps · cfg 7.0' },
+      { k: 'LATENT',   v: '1024×1024' },
+      { k: 'POST',     v: 'ImageScale area 64 → ImageQuantize 24' },
+      { k: '만료',      v: this.props.expired ? '만료됨 — 썸네일만 남음' : '2026-09-18' },
+    ];
+    return {
+      u, u2: u * 2, w: Number(this.props.w ?? 420),
+      id: this.props.id ?? 'cmp-B-area-quant_00001',
+      thumb: this.props.thumb || fallback,
+      flagged: !!this.props.flagged,
+      expired: !!this.props.expired,
+      rows,
+      actions: ['경로 복사', '프롬프트 복사', '레시피 복사', 'replay 명령'],
+    };
+  }
+}
+</script>
+</body>
+</html>

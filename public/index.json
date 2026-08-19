@@ -1,0 +1,278 @@
+{
+ "version": 1,
+ "generated_at": "2026-08-19T11:47:28Z",
+ "public": true,
+ "assets": [
+  {
+   "id": "artforge_00007",
+   "created_at": "2026-08-19T09:13:10Z",
+   "width": 768,
+   "height": 768,
+   "bytes": 246262,
+   "thumb": "thumbs/artforge_00007.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, full body standing, long blonde hair, pink cardigan, holding a stylus, limited color palette, clean pixel grid, plain flat background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 20260820,
+    "steps": 22,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "768x768",
+    "post": []
+   },
+   "asset": "assets/artforge_00007.webp"
+  },
+  {
+   "id": "cmp-0-source_00001",
+   "created_at": "2026-08-19T08:04:46Z",
+   "width": 1024,
+   "height": 1024,
+   "bytes": 577141,
+   "thumb": "thumbs/cmp-0-source_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, a knight character standing, front view, simple flat colors, dark outline, game sprite, plain background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, photorealistic, gradient shading",
+    "seed": 777,
+    "steps": 25,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "1024x1024",
+    "post": []
+   },
+   "asset": "assets/cmp-0-source_00001.webp"
+  },
+  {
+   "id": "cmp-A-nn-only_00001",
+   "created_at": "2026-08-19T08:04:46Z",
+   "width": 512,
+   "height": 512,
+   "bytes": 11281,
+   "thumb": "thumbs/cmp-A-nn-only_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, a knight character standing, front view, simple flat colors, dark outline, game sprite, plain background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, photorealistic, gradient shading",
+    "seed": 777,
+    "steps": 25,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "1024x1024",
+    "post": [
+     "ImageScale nearest-exact 64x64",
+     "ImageScale nearest-exact 512x512"
+    ]
+   },
+   "asset": "assets/cmp-A-nn-only_00001.webp"
+  },
+  {
+   "id": "cmp-B-area-quant_00001",
+   "created_at": "2026-08-19T08:04:46Z",
+   "width": 512,
+   "height": 512,
+   "bytes": 9046,
+   "thumb": "thumbs/cmp-B-area-quant_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, a knight character standing, front view, simple flat colors, dark outline, game sprite, plain background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, photorealistic, gradient shading",
+    "seed": 777,
+    "steps": 25,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "1024x1024",
+    "post": [
+     "ImageScale area 64x64",
+     "ImageQuantize 24색",
+     "ImageScale nearest-exact 512x512"
+    ]
+   },
+   "asset": "assets/cmp-B-area-quant_00001.webp"
+  },
+  {
+   "id": "ComfyUI_00001",
+   "created_at": "2026-08-19T07:44:23Z",
+   "width": 1024,
+   "height": 1024,
+   "bytes": 1392780,
+   "thumb": "thumbs/ComfyUI_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": null,
+    "prompt": "a cozy blacksmith forge interior, glowing anvil, warm orange firelight, dark stone walls, hanging tools, game studio concept art",
+    "negative": "text, watermark",
+    "seed": 721897303308196,
+    "steps": 25,
+    "cfg": 8.0,
+    "sampler": "euler",
+    "scheduler": "normal",
+    "latent": "1024x1024",
+    "post": []
+   },
+   "asset": "assets/ComfyUI_00001.webp"
+  },
+  {
+   "id": "artforge-smoke_00001",
+   "created_at": "2026-08-19T07:37:30Z",
+   "width": 1024,
+   "height": 1024,
+   "bytes": 1428692,
+   "thumb": "thumbs/artforge-smoke_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": null,
+    "prompt": "a cozy blacksmith forge interior, glowing anvil, warm orange firelight, dark stone walls, hanging tools, game studio concept art, detailed illustration",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 20260819,
+    "steps": 25,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "1024x1024",
+    "post": []
+   },
+   "asset": "assets/artforge-smoke_00001.webp"
+  },
+  {
+   "id": "artforge_00006",
+   "created_at": "2026-08-18T14:32:02Z",
+   "width": 768,
+   "height": 768,
+   "bytes": 422429,
+   "thumb": "thumbs/artforge_00006.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, full body standing, brown ponytail, grey blazer, holding a notebook, limited color palette, clean pixel grid, plain flat background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 1234,
+    "steps": 22,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "768x768",
+    "post": []
+   },
+   "asset": "assets/artforge_00006.webp"
+  },
+  {
+   "id": "artforge_00005",
+   "created_at": "2026-08-18T14:30:24Z",
+   "width": 768,
+   "height": 768,
+   "bytes": 483527,
+   "thumb": "thumbs/artforge_00005.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, full body standing, spiky red hair, headphones around neck, green hoodie, limited color palette, clean pixel grid, plain flat background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 1234,
+    "steps": 22,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "768x768",
+    "post": []
+   },
+   "asset": "assets/artforge_00005.webp"
+  },
+  {
+   "id": "artforge_00004",
+   "created_at": "2026-08-18T14:28:46Z",
+   "width": 768,
+   "height": 768,
+   "bytes": 413246,
+   "thumb": "thumbs/artforge_00004.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, full body standing, long blonde hair, pink cardigan, holding a stylus, limited color palette, clean pixel grid, plain flat background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 1234,
+    "steps": 22,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "768x768",
+    "post": []
+   },
+   "asset": "assets/artforge_00004.webp"
+  },
+  {
+   "id": "artforge_00003",
+   "created_at": "2026-08-18T14:27:13Z",
+   "width": 768,
+   "height": 768,
+   "bytes": 351881,
+   "thumb": "thumbs/artforge_00003.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, full body standing, short black hair, glasses, white shirt, dark tie, limited color palette, clean pixel grid, plain flat background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 1234,
+    "steps": 22,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "768x768",
+    "post": []
+   },
+   "asset": "assets/artforge_00003.webp"
+  },
+  {
+   "id": "artforge_00002",
+   "created_at": "2026-08-18T14:24:41Z",
+   "width": 1024,
+   "height": 1024,
+   "bytes": 672761,
+   "thumb": "thumbs/artforge_00002.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": "pixel art, chibi office worker character sprite, two-head-tall, front facing, brown hair, white shirt, dark tie, limited color palette, clean pixel grid, transparent-like plain background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 7,
+    "steps": 25,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "1024x1024",
+    "post": []
+   },
+   "asset": "assets/artforge_00002.webp"
+  },
+  {
+   "id": "artforge_00001",
+   "created_at": "2026-08-18T14:21:13Z",
+   "width": 768,
+   "height": 768,
+   "bytes": 645117,
+   "thumb": "thumbs/artforge_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": null,
+    "prompt": "chibi game developer sitting at a desk with a computer, two-head-tall proportions, simple flat colors, thick dark outline, cute retro game sprite character, front view, plain white background",
+    "negative": "blurry, jpeg artifacts, watermark, text, signature, lowres, deformed",
+    "seed": 42,
+    "steps": 20,
+    "cfg": 7.0,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "768x768",
+    "post": []
+   },
+   "asset": "assets/artforge_00001.webp"
+  }
+ ]
+}

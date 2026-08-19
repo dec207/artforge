@@ -1,0 +1,542 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pillow>=10"]
+# ///
+"""artforge 에셋 스토어.
+
+ComfyUI가 뱉은 PNG를 모아 목록으로 만들고, 브라우저로 보여준다.
+
+핵심은 규율을 요구하지 않는 것이다. 모든 PNG는 자기를 만든 그래프를 tEXt 청크에
+품고 있으므로 짝 json이 필요 없다. 썸네일과 레시피는 영구 보관해도 가볍고(1000장에
+약 4MB), 원본 픽셀만 소모품으로 취급한다. 원본이 만료돼도 레시피가 남으므로
+`forge replay` 로 다시 만들 수 있다 — 만료는 손실이 아니다.
+
+    ./forge                 유입 → 만료 정리 → 브라우저
+    ./forge ingest          새 이미지를 목록에 들인다
+    ./forge prune           만료된 원본을 지운다
+    ./forge flag <id>…      공개 플래그를 켠다 (만료 면제)
+    ./forge replay <id>     저장된 그래프를 ComfyUI에 다시 던진다
+    ./forge publish         플래그된 것만으로 public/ 을 만든다
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import urllib.request
+import uuid
+import webbrowser
+from datetime import datetime, timedelta, timezone
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+from PIL import Image
+
+ROOT = Path(__file__).resolve().parent
+CATALOG = ROOT / "catalog"
+INDEX = CATALOG / "index.json"
+CONFIG = CATALOG / "config.json"
+THUMBS = CATALOG / "thumbs"
+RECIPES = CATALOG / "recipes"
+ORIGINALS = CATALOG / "originals"
+WEB = ROOT / "web"
+PUBLIC = ROOT / "public"
+
+THUMB_PX = 256
+DEFAULTS = {"retain_days": 30, "comfy_url": "http://127.0.0.1:8188", "port": 8420}
+
+
+def now():
+    return datetime.now(timezone.utc)
+
+
+def iso(dt):
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def load_config():
+    cfg = dict(DEFAULTS)
+    if CONFIG.exists():
+        cfg.update(json.loads(CONFIG.read_text()))
+    return cfg
+
+
+def load_index():
+    if INDEX.exists():
+        return json.loads(INDEX.read_text())
+    return {"version": 1, "generated_at": None, "assets": []}
+
+
+def save_index(idx):
+    idx["generated_at"] = iso(now())
+    idx["assets"].sort(key=lambda a: a.get("created_at") or "", reverse=True)
+    CATALOG.mkdir(exist_ok=True)
+    INDEX.write_text(json.dumps(idx, ensure_ascii=False, indent=1) + "\n")
+
+
+# ── 원천 ────────────────────────────────────────────────────────────────
+def comfy_output_dir():
+    """`comfy which` 로 워크스페이스를 물어본다. 경로를 박아두지 않는다."""
+    try:
+        out = subprocess.run(["comfy", "which"], capture_output=True, text=True, timeout=30)
+        data = json.loads(out.stdout.strip().splitlines()[-1])
+        ws = data.get("data", {}).get("workspace_path")
+        if ws:
+            return Path(ws) / "output"
+    except Exception:
+        pass
+    return Path.home() / "ComfyUI" / "output"
+
+
+# ── 레시피 추출 ─────────────────────────────────────────────────────────
+# 이미지 도메인 노드. VAEDecode 이후 SaveImage 까지의 후처리 사슬을 이걸로 가려낸다.
+IMAGE_OPS = {
+    "ImageScale", "ImageScaleBy", "ImageScaleToMaxDimension", "ImageScaleToTotalPixels",
+    "ImageQuantize", "ImageBlur", "ImageSharpen", "ImageInvert", "ImageCrop",
+    "ImagePadForOutpaint", "ImageBatch",
+}
+
+
+def deref(graph, val):
+    """API 포맷의 입력은 리터럴이거나 [node_id, slot] 링크다. 링크면 값을 따라간다."""
+    seen = 0
+    while isinstance(val, list) and len(val) == 2 and str(val[0]) in graph and seen < 12:
+        node = graph[str(val[0])]
+        ins = node.get("inputs", {})
+        if node.get("class_type") in ("CLIPTextEncode", "PrimitiveNode") and "text" in ins:
+            val = ins["text"]
+        elif "value" in ins:
+            val = ins["value"]
+        else:
+            return None
+        seen += 1
+    return val if not isinstance(val, list) else None
+
+
+def ancestors(graph, start_id):
+    """start_id 에서 입력 링크를 거슬러 닿는 모든 노드 id (도달 순서 보존)."""
+    order, seen, stack = [], set(), [str(start_id)]
+    while stack:
+        nid = stack.pop()
+        if nid in seen or nid not in graph:
+            continue
+        seen.add(nid)
+        order.append(nid)
+        for v in graph[nid].get("inputs", {}).values():
+            if isinstance(v, list) and len(v) == 2:
+                stack.append(str(v[0]))
+    return order
+
+
+def post_chain(graph, save_id):
+    """SaveImage 에서 VAEDecode 까지 역방향으로 걸으며 후처리 노드를 순서대로 모은다.
+
+    한 실행에 SaveImage 가 여럿이면 세 파일이 같은 그래프를 공유한다.
+    이 함수가 그 셋을 갈라준다 — 각자 지나온 사슬만 기록된다.
+    """
+    chain, nid, hops = [], str(save_id), 0
+    while nid in graph and hops < 40:
+        node = graph[nid]
+        ct = node.get("class_type")
+        if ct in IMAGE_OPS:
+            ins = node.get("inputs", {})
+            if ct.startswith("ImageScale"):
+                m = ins.get("upscale_method", "?")
+                w, h = ins.get("width"), ins.get("height")
+                chain.append(f"{ct} {m} {w}x{h}" if w else f"{ct} {m}")
+            elif ct == "ImageQuantize":
+                chain.append(f"ImageQuantize {ins.get('colors')}색")
+            else:
+                chain.append(ct)
+        if ct == "VAEDecode":
+            break
+        link = node.get("inputs", {}).get("images") or node.get("inputs", {}).get("image")
+        if not (isinstance(link, list) and len(link) == 2):
+            break
+        nid = str(link[0])
+        hops += 1
+    return list(reversed(chain))
+
+
+def extract_recipe(graph, save_id):
+    """SaveImage 한 개에 대응하는 생성 조건을 뽑는다."""
+    reach = ancestors(graph, save_id)
+    r = {"checkpoint": None, "lora": None, "prompt": None, "negative": None,
+         "seed": None, "steps": None, "cfg": None, "sampler": None,
+         "scheduler": None, "latent": None, "post": post_chain(graph, save_id)}
+
+    ckpts, samplers = [], []
+    for nid in reach:
+        node = graph[nid]
+        ct, ins = node.get("class_type"), node.get("inputs", {})
+        if ct == "CheckpointLoaderSimple":
+            ckpts.append(ins.get("ckpt_name"))
+        elif ct in ("LoraLoader", "LoraLoaderModelOnly"):
+            r["lora"] = ins.get("lora_name")
+        elif ct == "EmptyLatentImage":
+            r["latent"] = f"{ins.get('width')}x{ins.get('height')}"
+        elif ct in ("KSampler", "KSamplerAdvanced"):
+            samplers.append((nid, ct, ins))
+
+    if ckpts:
+        r["checkpoint"] = ckpts[0]
+
+    # 샘플러가 여럿이면(base→refiner 2단) 첫 단을 대표로 삼는다.
+    # 그래프 순회 순서는 보장되지 않으므로 명시적으로 정렬한다 — 노이즈를 넣는 쪽이,
+    # 그중에서도 start_at_step 이 이른 쪽이 원본 시드를 쥔 단이다.
+    samplers.sort(key=lambda s: (s[2].get("add_noise") == "disable",
+                                 s[2].get("start_at_step") or 0))
+    for nid, ct, ins in samplers:
+        r["seed"] = ins.get("seed") if ct == "KSampler" else ins.get("noise_seed")
+        r["steps"], r["cfg"] = ins.get("steps"), ins.get("cfg")
+        r["sampler"], r["scheduler"] = ins.get("sampler_name"), ins.get("scheduler")
+        pos, neg = ins.get("positive"), ins.get("negative")
+        for key, link in (("prompt", pos), ("negative", neg)):
+            if isinstance(link, list) and len(link) == 2:
+                tnode = graph.get(str(link[0]), {})
+                txt = deref(graph, tnode.get("inputs", {}).get("text"))
+                if isinstance(txt, str) and not r[key]:
+                    r[key] = txt
+        if r["prompt"]:
+            break
+    return r
+
+
+def save_nodes(graph):
+    """{filename_prefix: node_id} — 파일을 만든 SaveImage 를 찾기 위한 표."""
+    out = {}
+    for nid, node in graph.items():
+        if node.get("class_type") in ("SaveImage", "SaveImageWebsocket"):
+            prefix = node.get("inputs", {}).get("filename_prefix")
+            if isinstance(prefix, str):
+                out.setdefault(prefix, nid)
+    return out
+
+
+def read_graph(path):
+    try:
+        with Image.open(path) as im:
+            raw = im.info.get("prompt")
+        return json.loads(raw) if raw else None
+    except Exception:
+        return None
+
+
+def asset_id(stem):
+    """`cmp-A-nn-only_00001_` → `cmp-A-nn-only_00001`. 의미 있는 이름을 지킨다."""
+    return re.sub(r"_+$", "", stem)
+
+
+def sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ── 유입 ────────────────────────────────────────────────────────────────
+def cmd_ingest(args):
+    cfg = load_config()
+    src = Path(args.source).expanduser() if args.source else comfy_output_dir()
+    if not src.is_dir():
+        sys.exit(f"원천을 찾을 수 없다: {src}")
+
+    for d in (CATALOG, THUMBS, RECIPES, ORIGINALS):
+        d.mkdir(parents=True, exist_ok=True)
+    if not CONFIG.exists():
+        CONFIG.write_text(json.dumps(DEFAULTS, ensure_ascii=False, indent=1) + "\n")
+
+    idx = load_index()
+    known = {a["sha256"] for a in idx["assets"]}
+    taken = {a["id"] for a in idx["assets"]}
+    added = 0
+
+    for path in sorted(src.rglob("*.png")):
+        digest = sha256(path)
+        if digest in known:
+            continue
+
+        base = asset_id(path.stem)
+        aid, n = base, 2
+        while aid in taken:
+            aid, n = f"{base}-{n}", n + 1
+
+        try:
+            with Image.open(path) as im:
+                w, h = im.size
+                thumb = im.convert("RGB")
+                thumb.thumbnail((THUMB_PX, THUMB_PX), Image.LANCZOS)
+                thumb.save(THUMBS / f"{aid}.webp", "WEBP", quality=72)
+        except Exception as e:
+            print(f"  건너뜀 {path.name}: {e}")
+            continue
+
+        graph = read_graph(path)
+        recipe = None
+        if graph:
+            (RECIPES / f"{aid}.json").write_text(json.dumps(graph, ensure_ascii=False) + "\n")
+            nodes = save_nodes(graph)
+            # 파일명 prefix 로 이 파일을 만든 SaveImage 를 고른다. 못 찾으면 첫 번째.
+            sid = next((v for k, v in sorted(nodes.items(), key=lambda kv: -len(kv[0]))
+                        if path.stem.startswith(k)), None)
+            if sid is None and nodes:
+                sid = next(iter(nodes.values()))
+            if sid:
+                recipe = extract_recipe(graph, sid)
+
+        shutil.copy2(path, ORIGINALS / f"{aid}.png")
+        created = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+        idx["assets"].append({
+            "id": aid,
+            "sha256": digest,
+            "source": str(path),
+            "created_at": iso(created),
+            "ingested_at": iso(now()),
+            "expires_at": iso(now() + timedelta(days=cfg["retain_days"])),
+            "flagged": False,
+            "width": w, "height": h, "bytes": path.stat().st_size,
+            "thumb": f"thumbs/{aid}.webp",
+            "original": f"originals/{aid}.png",
+            "recipe": recipe,
+        })
+        known.add(digest)
+        taken.add(aid)
+        added += 1
+        print(f"  + {aid}  {w}×{h}")
+
+    save_index(idx)
+    print(f"유입 {added}개 · 목록 {len(idx['assets'])}개 · 원천 {src}")
+    return added
+
+
+# ── 만료 ────────────────────────────────────────────────────────────────
+def cmd_prune(args):
+    cfg = load_config()
+    idx = load_index()
+    t = iso(now())
+    gone = 0
+    for a in idx["assets"]:
+        if a["flagged"] or not a.get("original"):
+            continue
+        if a.get("expires_at") and a["expires_at"] <= t:
+            p = CATALOG / a["original"]
+            if p.exists():
+                p.unlink()
+            a["original"] = None      # 썸네일과 레시피는 남는다 — replay 로 복구 가능
+            gone += 1
+            print(f"  − {a['id']} 원본 만료")
+    save_index(idx)
+    if gone:
+        print(f"만료 {gone}개 (썸네일·레시피는 유지 · 보존 {cfg['retain_days']}일)")
+    return gone
+
+
+# ── 플래그 ──────────────────────────────────────────────────────────────
+def set_flag(ids, on):
+    idx = load_index()
+    hit = 0
+    for a in idx["assets"]:
+        if a["id"] in ids:
+            a["flagged"] = on
+            # 플래그는 만료 면제다. 끄면 오늘부터 다시 유예를 센다.
+            a["expires_at"] = None if on else iso(now() + timedelta(days=load_config()["retain_days"]))
+            hit += 1
+    save_index(idx)
+    return hit
+
+
+def cmd_flag(args):
+    n = set_flag(set(args.ids), True)
+    print(f"플래그 {n}개 — 만료 면제, 공개 후보")
+
+
+def cmd_unflag(args):
+    n = set_flag(set(args.ids), False)
+    print(f"플래그 해제 {n}개")
+
+
+# ── 재생성 ──────────────────────────────────────────────────────────────
+def cmd_replay(args):
+    cfg = load_config()
+    p = RECIPES / f"{args.id}.json"
+    if not p.exists():
+        sys.exit(f"레시피가 없다: {args.id}")
+    graph = json.loads(p.read_text())
+
+    if args.seed is not None:
+        for node in graph.values():
+            ins = node.get("inputs", {})
+            if node.get("class_type") == "KSampler" and "seed" in ins:
+                ins["seed"] = args.seed
+            elif node.get("class_type") == "KSamplerAdvanced" and "noise_seed" in ins:
+                ins["noise_seed"] = args.seed
+
+    body = json.dumps({"prompt": graph, "client_id": str(uuid.uuid4())}).encode()
+    req = urllib.request.Request(cfg["comfy_url"] + "/prompt", data=body,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            res = json.load(r)
+    except Exception as e:
+        sys.exit(f"ComfyUI에 못 넣었다 ({cfg['comfy_url']}): {e}\n서버가 떠 있는지 확인한다.")
+    print(f"제출됨 prompt_id={res.get('prompt_id')} — 끝나면 ./forge 로 유입된다")
+
+
+# ── 공개본 ──────────────────────────────────────────────────────────────
+VIEW_PX = 1024
+VIEW_LOSSLESS_COLORS = 4096   # 이 아래면 양자화된 그림으로 보고 무손실로 간다
+
+
+def make_view(src, dst):
+    """공개본용 뷰 렌더. 원본 PNG 를 그대로 싣지 않는다 — 6.4MB 가 300KB 가 된다.
+
+    손실 압축은 픽셀 아트의 각진 경계를 뭉갠다. 색 수가 적으면(팔레트 스냅을 거친
+    그림) 무손실로 저장해 격자를 지키고, 그라디언트가 많은 그림만 손실로 줄인다.
+    """
+    with Image.open(src) as im:
+        im = im.convert("RGB")
+        colors = im.getcolors(maxcolors=VIEW_LOSSLESS_COLORS)   # 넘으면 None
+        im.thumbnail((VIEW_PX, VIEW_PX), Image.LANCZOS)
+        if colors is not None:
+            im.save(dst, "WEBP", lossless=True)
+        else:
+            im.save(dst, "WEBP", quality=82)
+
+
+def cmd_publish(args):
+    idx = load_index()
+    # 기본은 플래그된 것만. --all 은 전부 올린다 — Vercel Hobby 요금제가 프로덕션
+    # 주소에 자물쇠를 못 달게 막아서, 전부 올린다는 것은 곧 전부 공개한다는 뜻이다.
+    # robots noindex 로 색인만 막을 뿐 접근 제어가 아니다.
+    picked = idx["assets"] if getattr(args, "all", False) else [a for a in idx["assets"] if a["flagged"]]
+
+    for sub in ("thumbs", "assets"):
+        d = PUBLIC / sub
+        if d.exists():
+            shutil.rmtree(d)
+        d.mkdir(parents=True, exist_ok=True)
+
+    out = []
+    for a in picked:
+        t = CATALOG / a["thumb"]
+        if t.exists():
+            shutil.copy2(t, PUBLIC / "thumbs" / t.name)
+        rec = dict(a["recipe"] or {})
+        item = {k: a[k] for k in ("id", "created_at", "width", "height", "bytes")}
+        item.update(thumb=a["thumb"], recipe=rec, asset=None)   # 로컬 절대경로는 싣지 않는다
+        if a.get("original"):
+            o = CATALOG / a["original"]
+            if o.exists():
+                item["asset"] = f"assets/{a['id']}.webp"
+                make_view(o, PUBLIC / "assets" / f"{a['id']}.webp")
+        out.append(item)
+
+    for f in ("index.html", "store.css", "store.js"):
+        if (WEB / f).exists():
+            shutil.copy2(WEB / f, PUBLIC / f)
+
+    (PUBLIC / "robots.txt").write_text("User-agent: *\nDisallow: /\n")
+
+    (PUBLIC / "index.json").write_text(json.dumps(
+        {"version": 1, "generated_at": iso(now()), "public": True, "assets": out},
+        ensure_ascii=False, indent=1) + "\n")
+    print(f"공개본 {len(out)}개 → {PUBLIC}")
+    if not out:
+        print("  (플래그된 에셋이 없다 — 빈 상태로 나간다)")
+
+
+# ── 서버 ────────────────────────────────────────────────────────────────
+class Handler(SimpleHTTPRequestHandler):
+    """web/ 과 catalog/ 를 한 오리진으로 합쳐 낸다.
+
+    로컬 서버가 필요한 이유는 둘이다. file:// 에서는 Chrome 이 index.json fetch 를
+    CORS 로 막고, 정적 페이지는 파일을 쓸 수 없어 플래그를 켤 수 없다.
+    """
+
+    def log_message(self, *a):
+        pass
+
+    def translate_path(self, path):
+        rel = path.split("?", 1)[0].split("#", 1)[0].lstrip("/")
+        if rel in ("", "index.html"):
+            return str(WEB / "index.html")
+        if rel == "index.json":
+            return str(INDEX)
+        if rel.startswith(("thumbs/", "originals/")):
+            return str(CATALOG / rel)
+        return str(WEB / rel)
+
+    def do_POST(self):
+        if self.path != "/api/flag":
+            self.send_error(404)
+            return
+        n = int(self.headers.get("Content-Length", 0))
+        try:
+            body = json.loads(self.rfile.read(n) or b"{}")
+            hit = set_flag({body["id"]}, bool(body["flagged"]))
+        except Exception as e:
+            self.send_error(400, str(e))
+            return
+        payload = json.dumps({"ok": True, "updated": hit}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+
+def cmd_open(args):
+    cfg = load_config()
+    port = args.port or cfg["port"]
+    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    url = f"http://127.0.0.1:{port}/"
+    print(f"스토어 — {url}   (Ctrl-C 로 종료)")
+    if not args.no_browser:
+        webbrowser.open(url)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        print("\n종료")
+
+
+def cmd_default(args):
+    cmd_ingest(args)
+    cmd_prune(args)
+    cmd_open(args)
+
+
+def main():
+    # 공통 플래그는 부모 파서로 물려 서브커맨드 앞뒤 어느 쪽에 놓아도 받게 한다
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--source", help="원천 디렉터리 (기본: comfy which 의 workspace/output)")
+    common.add_argument("--port", type=int)
+    common.add_argument("--no-browser", action="store_true")
+
+    ap = argparse.ArgumentParser(description="artforge 에셋 스토어", parents=[common])
+    sub = ap.add_subparsers(dest="cmd")
+    add = lambda name: sub.add_parser(name, parents=[common])
+
+    add("ingest")
+    add("prune")
+    add("open")
+    p = add("flag");   p.add_argument("ids", nargs="+")
+    p = add("unflag"); p.add_argument("ids", nargs="+")
+    p = add("replay"); p.add_argument("id"); p.add_argument("--seed", type=int)
+    p = add("publish"); p.add_argument("--all", action="store_true",
+        help="플래그와 무관하게 전부 공개한다")
+
+    args = ap.parse_args()
+    {
+        None: cmd_default, "ingest": cmd_ingest, "prune": cmd_prune, "open": cmd_open,
+        "flag": cmd_flag, "unflag": cmd_unflag, "replay": cmd_replay, "publish": cmd_publish,
+    }[args.cmd](args)
+
+
+if __name__ == "__main__":
+    main()
