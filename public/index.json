@@ -1,8 +1,118 @@
 {
  "version": 1,
- "generated_at": "2026-08-19T13:12:03Z",
+ "generated_at": "2026-08-19T15:00:17Z",
  "public": true,
  "assets": [
+  {
+   "id": "staff-m1-side_00001",
+   "created_at": "2026-08-19T14:59:52Z",
+   "width": 832,
+   "height": 1216,
+   "bytes": 434956,
+   "thumb": "thumbs/staff-m1-side_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": null,
+    "negative": null,
+    "seed": 45120,
+    "steps": 28,
+    "cfg": 7.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "832x1216",
+    "post": []
+   },
+   "asset": "assets/staff-m1-side_00001.webp"
+  },
+  {
+   "id": "staff-m2-side_00001",
+   "created_at": "2026-08-19T14:59:52Z",
+   "width": 832,
+   "height": 1216,
+   "bytes": 437817,
+   "thumb": "thumbs/staff-m2-side_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": null,
+    "negative": null,
+    "seed": 45120,
+    "steps": 28,
+    "cfg": 7.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "832x1216",
+    "post": []
+   },
+   "asset": "assets/staff-m2-side_00001.webp"
+  },
+  {
+   "id": "staff-f2-side_00001",
+   "created_at": "2026-08-19T14:59:51Z",
+   "width": 832,
+   "height": 1216,
+   "bytes": 392615,
+   "thumb": "thumbs/staff-f2-side_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": null,
+    "negative": null,
+    "seed": 45120,
+    "steps": 28,
+    "cfg": 7.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "832x1216",
+    "post": []
+   },
+   "asset": "assets/staff-f2-side_00001.webp"
+  },
+  {
+   "id": "staff-f3-side_00001",
+   "created_at": "2026-08-19T14:59:51Z",
+   "width": 832,
+   "height": 1216,
+   "bytes": 299704,
+   "thumb": "thumbs/staff-f3-side_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": null,
+    "negative": null,
+    "seed": 45120,
+    "steps": 28,
+    "cfg": 7.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "832x1216",
+    "post": []
+   },
+   "asset": "assets/staff-f3-side_00001.webp"
+  },
+  {
+   "id": "staff-f1-side_00001",
+   "created_at": "2026-08-19T14:59:50Z",
+   "width": 832,
+   "height": 1216,
+   "bytes": 473001,
+   "thumb": "thumbs/staff-f1-side_00001.webp",
+   "recipe": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "prompt": null,
+    "negative": null,
+    "seed": 45120,
+    "steps": 28,
+    "cfg": 7.5,
+    "sampler": "dpmpp_2m",
+    "scheduler": "karras",
+    "latent": "832x1216",
+    "post": []
+   },
+   "asset": "assets/staff-f1-side_00001.webp"
+  },
   {
    "id": "staff-m2_00001",
    "created_at": "2026-08-19T13:11:11Z",
