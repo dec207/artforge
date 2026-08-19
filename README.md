@@ -79,5 +79,12 @@ catalog/       index.json · recipes/ · thumbs/ · originals/(추적 안 함)
 public/        공개본 — Vercel 루트
 ```
 
-배포는 https://artforge-blush.vercel.app . GitHub 연결이 없어 자동 배포되지 않는다 —
-`./forge publish` 후 명시적으로 올린다.
+배포는 https://artforge-store.vercel.app . `main` 에 푸시하면 Vercel이 자동으로 올린다.
+
+```sh
+./forge publish --all     # 공개본 갱신 (플래그된 것만 올리려면 --all 을 뺀다)
+git add -A && git commit && git push
+```
+
+요금제상 프로덕션 주소에 자물쇠를 달 수 없어 `noindex` 와 `robots.txt` 만 넣었다.
+검색엔진에는 안 잡히지만 접근 제어는 아니다.
