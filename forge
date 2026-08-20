@@ -239,38 +239,47 @@ def rig_recipe(graph, reach, r):
     """샘플러가 없는 그래프 — 파츠 리깅으로 합성한 프레임이다.
 
     확산 그래프에는 프롬프트·모델·시드가 이력이지만 리깅에는 그런 것이 없다.
-    무엇을 어떤 각도로 몇 등신에 놓았는지가 이력이다. 여기서 뽑아 두지 않으면
+    무엇을 어떤 각도로 얼마나 늘려 놓았는지가 이력이다. 여기서 뽑아 두지 않으면
     스토어에 '생성 기록이 없다'로만 남아 재현도 검색도 안 된다.
     """
-    parts, angles, scales = [], [], {}
-    for nid in reach:
-        ins = graph[nid].get("inputs", {})
-        ct = graph[nid].get("class_type")
-        if ct == "LoadImage":
-            name = str(ins.get("image", ""))
-            if name.startswith("part-"):
-                parts.append(name[5:].rsplit(".", 1)[0])
-        elif ct.startswith("LayerUtility: ImageBlendAdvance"):
-            rot = ins.get("rotate")
-            if rot:
-                angles.append(round(float(rot), 1))
-            sc = ins.get("scale")
-            if sc not in (None, 1.0):
-                scales.setdefault(round(float(sc), 3), 0)
-                scales[round(float(sc), 3)] += 1
-    if not parts:
+    rows = []
+    for nid in sorted(reach, key=lambda k: (len(k), k)):
+        node = graph[nid]
+        if not node.get("class_type", "").startswith("LayerUtility: ImageBlendAdvance"):
+            continue
+        ins = node.get("inputs", {})
+        src = ins.get("layer_image")
+        if not isinstance(src, list):
+            continue
+        img = graph.get(src[0], {}).get("inputs", {}).get("image", "")
+        if not str(img).startswith("part-"):
+            continue
+        stem = str(img)[5:].rsplit(".", 1)[0]
+        tag = next((t for t in ("leg-far", "leg-near", "arm-far", "arm-near",
+                                "torso", "head") if stem.endswith(t)), stem)
+        tag = {"leg-far": "다리(뒤)", "leg-near": "다리(앞)",
+               "arm-far": "팔(뒤)", "arm-near": "팔(앞)",
+               "torso": "상체", "head": "머리"}.get(tag, tag)
+        w = float(ins.get("scale") or 1.0)
+        # aspect_ratio 는 세로만의 배율이다 — 가로 배율에 곱해야 실제 길이가 된다
+        h = w * float(ins.get("aspect_ratio") or 1.0)
+        bits = []
+        if abs(w - h) <= 0.005:
+            if abs(w - 1) > 0.005:
+                bits.append(f"{w:.2f}×")
+        elif abs(w - 1) <= 0.005:
+            bits.append(f"길이 {h:.2f}×")          # 가로 그대로, 세로만 — 다리 늘이기
+        else:
+            bits.append(f"가로 {w:.2f}× · 길이 {h:.2f}×")
+        rot = float(ins.get("rotate") or 0.0)
+        if abs(rot) > 0.05:
+            bits.append(f"{rot:+.1f}°")
+        rows.append(f"{tag} {' · '.join(bits) or '원본 그대로'}")
+    if not rows:
         return
-    src = sorted({p.rsplit("-", 1)[0] if p.rsplit("-", 1)[-1] in ("far", "near") else p
-                  for p in parts})
-    r["rig_parts"] = ", ".join(sorted(parts))
-    r["rig_angles"] = " / ".join(f"{a:+.1f}°" for a in angles) or "0°"
-    if scales:
-        # 배율 두 종이 곧 등신이다 — 머리를 줄인 만큼 몸통·다리가 늘어난다.
-        # 목표 등신 자체는 파일 이름(-3h·-7h)이 쥐고 있어 여기서 되짚지 않는다.
-        lo, hi = min(scales), max(scales)
-        r["rig_scale"] = f"머리 {lo}× · 몸통·다리 {hi}×" if lo != hi else f"{lo}×"
+    r["rig"] = " / ".join(rows)
     r["prompt"] = ("파츠 리깅 — 확산 모델이 그린 기준 포즈 한 장을 "
-                   f"{len(set(parts))}조각으로 나눠 회전·배치했다. 샘플러가 돌지 않아 "
+                   f"{len(rows)}조각으로 나눠 회전·배치했다. 샘플러가 돌지 않아 "
                    "머리띠·양말·신발이 프레임마다 픽셀 단위로 같다.")
 
 

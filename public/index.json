@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated_at": "2026-08-20T05:42:44Z",
+ "generated_at": "2026-08-20T05:45:38Z",
  "public": true,
  "assets": [
   {
@@ -29,9 +29,7 @@
     "latent": null,
     "controlnet": null,
     "post": [],
-    "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
-    "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "0.744×"
+    "rig": "다리(뒤) 길이 1.26× · -14.0° / 다리(앞) 길이 1.26× · +14.0° / 상체 길이 1.06× / 머리 0.74×"
    }
   },
   {
@@ -60,9 +58,7 @@
     "latent": null,
     "controlnet": null,
     "post": [],
-    "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
-    "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "0.992×"
+    "rig": "다리(뒤) 길이 1.01× · -14.0° / 다리(앞) 길이 1.01× · +14.0° / 상체 원본 그대로 / 머리 0.99×"
    }
   },
   {
@@ -91,9 +87,7 @@
     "latent": null,
     "controlnet": null,
     "post": [],
-    "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
-    "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "0.595×"
+    "rig": "다리(뒤) 길이 1.52× · -14.0° / 다리(앞) 길이 1.52× · +14.0° / 상체 길이 1.05× / 머리 0.60×"
    }
   },
   {
@@ -122,9 +116,7 @@
     "latent": null,
     "controlnet": null,
     "post": [],
-    "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
-    "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "0.425×"
+    "rig": "다리(뒤) 길이 2.03× · -14.0° / 다리(앞) 길이 2.03× · +14.0° / 상체 길이 0.92× / 머리 0.43×"
    }
   }
  ]
