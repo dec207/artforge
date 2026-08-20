@@ -119,6 +119,14 @@ button, input { font: inherit; color: inherit; }
   width: 100%; height: 100%; object-fit: contain; display: block;
   image-rendering: pixelated;   /* 픽셀 아트가 보간으로 뭉개지면 안 된다 */
 }
+/* 재생 중 표시 — 프레임 수. 액센트는 플래그 전용이라 여기엔 안 쓴다 */
+.play {
+  position: absolute; left: var(--u); bottom: var(--u);
+  font-style: normal; font-size: 10px; letter-spacing: .06em;
+  color: var(--shade-l); background: var(--ink);
+  border: 1px solid var(--shade); padding: 1px 5px;
+}
+
 /* 플래그 = 로고 격자의 한 칸. 액센트를 쓰는 유일한 자리다 */
 .flag {
   position: absolute; top: var(--u); right: var(--u);

@@ -48,7 +48,10 @@ WEB = ROOT / "web"
 PUBLIC = ROOT / "public"
 
 THUMB_PX = 256
-DEFAULTS = {"retain_days": 30, "comfy_url": "http://127.0.0.1:8188", "port": 8420}
+ANIMS = CATALOG / "anims"
+FRAME_RE = re.compile(r"^(?P<name>.+)-f(?P<n>\d+)_\d+$")   # walk-f3_00001 → walk, 3
+DEFAULTS = {"retain_days": 30, "comfy_url": "http://127.0.0.1:8188",
+            "port": 8420, "fps": 10}
 
 
 def now():
@@ -333,9 +336,66 @@ def cmd_ingest(args):
         added += 1
         print(f"  + {aid}  {w}×{h}")
 
+    build_anims(idx, cfg.get("fps", 10))
     save_index(idx)
     print(f"유입 {added}개 · 목록 {len(idx['assets'])}개 · 원천 {src}")
     return added
+
+
+# ── 애니메이션 ──────────────────────────────────────────────────────────
+def build_anims(idx, fps):
+    """`<name>-f<n>` 로 끝나는 자산들을 한 벌의 애니메이션으로 묶는다.
+
+    걷기 같은 순환 동작은 6장을 따로 보는 것이 아니라 재생돼야 뜻이 산다.
+    애니메이션 WebP 는 브라우저가 무한 반복하므로 CSS 스프라이트 계산이 필요 없다.
+    엔진에 넣을 사람을 위해 가로 스프라이트 시트도 같이 낸다.
+    """
+    ANIMS.mkdir(parents=True, exist_ok=True)
+    groups = {}
+    for a in idx["assets"]:
+        m = FRAME_RE.match(a["id"])
+        if m and a.get("original"):
+            groups.setdefault(m["name"], []).append((int(m["n"]), a))
+
+    out = []
+    for name, items in sorted(groups.items()):
+        if len(items) < 2:
+            continue
+        items.sort()
+        paths = [CATALOG / a["original"] for _, a in items]
+        frames = [Image.open(p).convert("RGB") for p in paths]
+
+        webp = ANIMS / f"{name}.webp"
+        frames[0].save(webp, "WEBP", save_all=True, append_images=frames[1:],
+                       duration=int(1000 / fps), loop=0, quality=80, method=4)
+
+        w, h = frames[0].size
+        sheet = Image.new("RGB", (w * len(frames), h))
+        for i, f in enumerate(frames):
+            sheet.paste(f, (i * w, 0))
+        # 시트는 엔진에 넣는 것이라 무손실. PNG 보다 작은 무손실 WebP 를 쓴다.
+        sheet_p = ANIMS / f"{name}-sheet.webp"
+        sheet.save(sheet_p, "WEBP", lossless=True, method=5)
+
+        thumb = frames[0].copy(); thumb.thumbnail((THUMB_PX, THUMB_PX), Image.LANCZOS)
+        thumb.save(ANIMS / f"{name}-poster.webp", "WEBP", quality=72)
+
+        first = items[0][1]
+        out.append({
+            "id": name, "kind": "animation",
+            "frames": len(frames), "fps": fps,
+            "width": w, "height": h,
+            "anim": f"anims/{name}.webp",
+            "sheet": f"anims/{name}-sheet.webp",
+            "thumb": f"anims/{name}-poster.webp",
+            "created_at": first["created_at"],
+            "bytes": webp.stat().st_size,
+            "recipe": first.get("recipe"),
+            "members": [a["id"] for _, a in items],
+        })
+        print(f"  ~ {name}  {len(frames)}프레임 {fps}fps  {webp.stat().st_size/1024:.0f}KB")
+    idx["animations"] = out
+    return out
 
 
 # ── 만료 ────────────────────────────────────────────────────────────────
@@ -439,14 +499,17 @@ def cmd_publish(args):
     # robots noindex 로 색인만 막을 뿐 접근 제어가 아니다.
     picked = idx["assets"] if getattr(args, "all", False) else [a for a in idx["assets"] if a["flagged"]]
 
-    for sub in ("thumbs", "assets"):
+    for sub in ("thumbs", "assets", "anims"):
         d = PUBLIC / sub
         if d.exists():
             shutil.rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
 
+    member = {m for an in idx.get("animations", []) for m in an["members"]}
     out = []
     for a in picked:
+        if a["id"] in member:      # 재생본이 결과물이라 낱장 뷰 렌더는 만들지 않는다
+            continue
         t = CATALOG / a["thumb"]
         if t.exists():
             shutil.copy2(t, PUBLIC / "thumbs" / t.name)
@@ -460,6 +523,16 @@ def cmd_publish(args):
                 make_view(o, PUBLIC / "assets" / f"{a['id']}.webp")
         out.append(item)
 
+    # 애니메이션 — 재생되는 한 장이 결과물이므로 멤버 프레임은 개별 카드에서 뺀다
+    anims = []
+    for an in idx.get("animations", []):
+        for key in ("anim", "sheet", "thumb"):
+            src_p = CATALOG / an[key]
+            if src_p.exists():
+                shutil.copy2(src_p, PUBLIC / "anims" / src_p.name)
+        anims.append({k: an[k] for k in
+                      ("id","kind","frames","fps","width","height",
+                       "anim","sheet","thumb","created_at","bytes","recipe")})
     for f in ("index.html", "store.css", "store.js"):
         if (WEB / f).exists():
             shutil.copy2(WEB / f, PUBLIC / f)
@@ -467,9 +540,10 @@ def cmd_publish(args):
     (PUBLIC / "robots.txt").write_text("User-agent: *\nDisallow: /\n")
 
     (PUBLIC / "index.json").write_text(json.dumps(
-        {"version": 1, "generated_at": iso(now()), "public": True, "assets": out},
+        {"version": 1, "generated_at": iso(now()), "public": True,
+         "assets": anims + out},
         ensure_ascii=False, indent=1) + "\n")
-    print(f"공개본 {len(out)}개 → {PUBLIC}")
+    print(f"공개본 — 애니메이션 {len(anims)} · 낱장 {len(out)} → {PUBLIC}")
     if not out:
         print("  (플래그된 에셋이 없다 — 빈 상태로 나간다)")
 
@@ -491,7 +565,7 @@ class Handler(SimpleHTTPRequestHandler):
             return str(WEB / "index.html")
         if rel == "index.json":
             return str(INDEX)
-        if rel.startswith(("thumbs/", "originals/")):
+        if rel.startswith(("thumbs/", "originals/", "anims/")):
             return str(CATALOG / rel)
         return str(WEB / rel)
 

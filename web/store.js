@@ -119,10 +119,12 @@
     b.type = 'button';
     const shot = el('span', 'shot');
     const img = el('img');
-    img.src = a.thumb;
+    // 애니메이션은 재생되는 것이 결과물이라 그리드에서 바로 돈다 (WebP 가 무한 반복)
+    img.src = a.anim || a.thumb;
     img.alt = '';
     img.loading = 'lazy';
     shot.append(img);
+    if (a.kind === 'animation') shot.append(el('i', 'play', `${a.frames}f`));
     if (a.flagged) shot.append(el('i', 'flag'));
     if (a.original === null) shot.append(el('i', 'dead'));
     else if (a.expires_at && Date.parse(a.expires_at) - Date.now() < 7 * DAY) shot.append(el('i', 'soon'));
@@ -130,6 +132,7 @@
     const tags = el('span', 'tags');
     const r = a.recipe || {};
     const list = [`${a.width}×${a.height}`, short(r.checkpoint) || '기록 없음'];
+    if (a.kind === 'animation') list.unshift(`${a.frames}프레임 ${a.fps}fps`);
     if (r.lora) list.push('+ ' + short(r.lora));
     for (const t of list) tags.append(el('i', 'tag', t));
 
@@ -189,7 +192,7 @@
 
     const shot = el('div', 'panel-shot');
     const img = el('img');
-    img.src = (!dead && (a.asset || a.original)) || a.thumb;
+    img.src = a.anim || ((!dead && (a.asset || a.original)) || a.thumb);
     img.alt = a.id;
     shot.append(img);
 
@@ -198,6 +201,7 @@
       ['MODEL', r.checkpoint], ['LORA', r.lora],
       ['SEED', r.seed], ['SAMPLER', [r.sampler, r.scheduler].filter(Boolean).join(' · ')],
       ['STEPS', [r.steps && r.steps + ' steps', r.cfg != null && 'cfg ' + r.cfg].filter(Boolean).join(' · ')],
+      ['프레임', a.kind === 'animation' ? `${a.frames}장 · ${a.fps}fps · 무한 반복` : null],
       ['LATENT', r.latent], ['CONTROLNET', short(r.controlnet)],
       ['POST', (r.post || []).join(' → ')],
       ['만료', dead ? '만료됨' : (a.expires_at ? a.expires_at.slice(0, 10) : '면제 (플래그)')],
@@ -209,6 +213,10 @@
     const acts = el('div', 'acts');
     const add = (label, fn, cls) => { const b = el('button', cls, label); b.onclick = fn; acts.append(b); };
 
+    if (a.sheet) {
+      add('스프라이트 시트', () => { const l = document.createElement('a');
+        l.href = a.sheet; l.download = `${a.id}-sheet.webp`; l.click(); });
+    }
     if (r.prompt) add('프롬프트 복사', () => copy(r.prompt, '프롬프트 복사됨'));
     add('레시피 복사', () => copy(JSON.stringify(r, null, 1), '레시피 복사됨'));
 

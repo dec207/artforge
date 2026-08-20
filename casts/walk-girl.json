@@ -1,0 +1,30 @@
+{
+ "version": 1,
+ "note": "3등신 여성 1인의 걷기 사이클 6프레임. 일관성은 시드 고정 + 프레임별 스켈레톤 + 글자 단위 동일한 프롬프트에서 온다. OpenPose 는 머리 부피를 그리지 않으므로 3등신은 프롬프트가 함께 민다.",
+ "engine": {
+  "checkpoint": "sd_xl_base_1.0.safetensors",
+  "lora": "pixel-art-xl.safetensors",
+  "lora_strength": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "steps": 26,
+  "cfg": 7.5,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "controlnet": "openpose-sdxl-xinsir.safetensors",
+  "cn_strength": 0.78,
+  "cn_end": 0.6
+ },
+ "seed": 55301,
+ "who": "a young woman with a short brown bob and a red hair clip, wearing a white blouse and a dark navy blue pleated skirt, navy blue skirt, white socks and brown shoes",
+ "positive_template": "pixel art, super deformed chibi, extremely large round head taking up one third of the total height, tiny short body with very short arms and legs, three-head-tall proportions, {who}, walking to the right seen from the side, single character alone, full body from head to shoes, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+ "negative": "brown skirt, tan skirt, khaki skirt, olive skirt, realistic proportions, small head, tall body, long legs, long arms, adult proportions, front view, facing viewer, both eyes visible, back view, three-quarter view, multiple characters, two people, sprite sheet, multiple poses, grid, collage, duplicate, cropped, close-up, cut off legs, feet touching image edge, brick wall, wall texture, pattern, architecture, room, interior, background details, scenery, blurry, jpeg artifacts, watermark, text, signature, photorealistic, 3d render",
+ "frames": [
+  "f1",
+  "f2",
+  "f3",
+  "f4",
+  "f5",
+  "f6"
+ ]
+}
