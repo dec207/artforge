@@ -1,0 +1,306 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pillow", "numpy"]
+# ///
+"""파츠 리깅 — 한 번 그린 캐릭터를 ComfyUI 노드로 움직인다.
+
+확산 모델은 기준 포즈 한 장만 그린다. 그 뒤로는 샘플러가 없다.
+같은 픽셀을 회전·이동·확대할 뿐이라 머리띠·양말·신발이 프레임마다
+달라질 방법이 구조적으로 없다 — 일관성이 확률이 아니라 보장이다.
+
+이미지 처리는 전부 ComfyUI 노드가 한다. 이 스크립트는 그래프를 조립하고
+실행할 뿐이다(제약: 모든 작업은 ComfyUI 안에서).
+
+    ./rig cut  <캐릭터>            기준 포즈를 파츠로 자른다 (1회)
+    ./rig play <캐릭터> <동작>      동작 프레임을 합성한다
+"""
+
+import argparse, json, math, time, urllib.request, uuid
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+CASTS, MOTIONS = ROOT / "casts", ROOT / "motions"
+COMFY = "http://127.0.0.1:8188"
+
+# LayerStyle 의 이 노드가 회전·스케일·배치·마스크를 한 번에 처리한다.
+# 코어에는 임의 각도 이미지 회전이 없어(ImageRotate 는 90도 단위) 이 팩이 필요하다.
+BLEND = "LayerUtility: ImageBlendAdvance V3"
+
+
+def post(graph):
+    body = json.dumps({"prompt": graph, "client_id": str(uuid.uuid4())}).encode()
+    req = urllib.request.Request(COMFY + "/prompt", data=body,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.load(r)["prompt_id"]
+
+
+def wait(pid, timeout=600):
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        with urllib.request.urlopen(f"{COMFY}/history/{pid}", timeout=30) as r:
+            h = json.load(r)
+        if pid in h:
+            st = h[pid]["status"]
+            if st.get("status_str") == "error":
+                raise SystemExit(f"ComfyUI 실행 실패: {json.dumps(st)[:400]}")
+            outs = []
+            for node in h[pid]["outputs"].values():
+                for im in node.get("images", []):
+                    outs.append(im["filename"])
+            return outs
+        time.sleep(2)
+    raise SystemExit("시간 초과")
+
+
+def load_src(spec, name):
+    """기준 포즈를 읽고 배경을 알파로 만든다. 여기서 배경 투명이 확정된다.
+
+    코어의 ImageColorToMask 는 색이 정확히 일치해야만 잡는다. 생성된 배경은
+    미세한 그라데이션이라 0.1% 밖에 안 걸렸다 — 허용오차가 있는 MaskByColor 를 쓴다.
+
+    ComfyUI 의 MASK 는 1 이 투명이다(LoadImage 도 JoinImageWithAlpha 도 그 규약이다).
+    MaskByColor 가 지정색을 1 로 내주므로 배경색을 그대로 넣으면 그게 알파가 된다.
+
+    확산 모델이 발밑에 그려 넣은 접지 그림자도 여기서 뺀다. 두고 자르면 그림자가
+    다리 파츠에 딸려 들어가 다리와 함께 회전한다 — 사각형이 기울어져 돈다.
+    그림자는 인물이 아니라 지면이므로 애초에 캐릭터에서 빠져야 한다.
+    """
+    r, g, b = spec["bg_rgb"]
+    hexcol = f"#{r:02X}{g:02X}{b:02X}"
+    out = {
+        "10": {"class_type": "LoadImage",
+               "inputs": {"image": f"{name}-source.png", "upload": "image"}},
+        "11": {"class_type": "LayerMask: MaskByColor",
+               "inputs": {"image": ["10", 0], "color": hexcol, "color_in_HEX": hexcol,
+                          "threshold": spec.get("bg_threshold", 20),
+                          "fix_gap": 2, "fix_threshold": 0.75,
+                          "invert_mask": False}},
+        # 1px 줄여 가장자리에 배경색이 섞인 픽셀을 버린다 (어두운 후광 방지)
+        "13": {"class_type": "GrowMask",
+               "inputs": {"mask": ["11", 0], "expand": -1, "tapered_corners": True}},
+    }
+    sh = spec.get("shadow")
+    if not sh:
+        return out, ["13", 0]
+
+    r, g, b = sh["rgb"]
+    shex = f"#{r:02X}{g:02X}{b:02X}"
+    W, H = spec.get("canvas", [1024, 1024])
+    top = sh["top_y"]
+    out.update({
+        "15": {"class_type": "LayerMask: MaskByColor",
+               "inputs": {"image": ["10", 0], "color": shex, "color_in_HEX": shex,
+                          "threshold": sh.get("threshold", 40),
+                          "fix_gap": 0, "fix_threshold": 0.75, "invert_mask": False}},
+        # 그림자색은 머리카락 음영에도 있다. 발밑 띠 안으로 한정한다
+        "16": {"class_type": "SolidMask", "inputs": {"value": 0.0, "width": W, "height": H}},
+        "17": {"class_type": "SolidMask", "inputs": {"value": 1.0, "width": W, "height": H - top}},
+        "18": {"class_type": "MaskComposite",
+               "inputs": {"destination": ["16", 0], "source": ["17", 0],
+                          "x": 0, "y": top, "operation": "add"}},
+        "19": {"class_type": "MaskComposite",
+               "inputs": {"destination": ["15", 0], "source": ["18", 0],
+                          "x": 0, "y": 0, "operation": "multiply"}},
+        # 1 이 투명이므로 그림자를 투명 집합에 더한다(빼는 게 아니다)
+        "12": {"class_type": "MaskComposite",
+               "inputs": {"destination": ["13", 0], "source": ["19", 0],
+                          "x": 0, "y": 0, "operation": "or"}},
+    })
+    return out, ["12", 0]
+
+
+def crop(nid, src, x, y, w, h):
+    return {nid: {"class_type": "ImageCrop",
+                  "inputs": {"image": src, "width": w, "height": h, "x": x, "y": y}}}
+
+
+def layer(nid, bg, img, mask, rot, xp, yp, scale):
+    """파츠 하나를 배경 위에 회전·배치한다. background_image 체이닝이 레이어 순서다."""
+    return {nid: {"class_type": BLEND, "inputs": {
+        "background_image": bg, "layer_image": img, "layer_mask": mask,
+        # LoadImage 의 MASK 는 알파의 반대다(투명한 곳이 1) — 뒤집어 써야 인물이 남는다
+        "invert_mask": True, "blend_mode": "normal", "opacity": 100,
+        "x_percent": round(xp, 3), "y_percent": round(yp, 3), "mirror": "None",
+        "scale": round(scale, 4), "aspect_ratio": 1.0, "rotate": round(rot, 3),
+        "transform_method": "lanczos", "anti_aliasing": 0}}}   # 픽셀 아트라 AA 0
+
+
+# 파츠 경계. 목·치마밑단을 기준으로 4조각. 등신을 바꾸려면 머리가 몸통에서
+# 떨어져 있어야 한다 — 한 덩어리면 머리를 줄일 때 상체까지 줄어든다.
+# over 는 이음매 겹침이다. 회전·축소로 관절이 벌어져도 구멍이 안 보인다.
+OVER = 12
+
+
+def part_boxes(spec):
+    c, f = spec["cuts"], spec["figure"]
+    neck, hem, split = c["neck_y"], c["hem_y"], c["leg_split_x"]
+    return {
+        "head":     (f["left"], f["top"], f["right"] - f["left"], neck - f["top"] + OVER),
+        "torso":    (f["left"], neck - OVER, f["right"] - f["left"], hem - neck + OVER),
+        "leg-far":  (f["left"], hem - OVER, split - f["left"], f["bottom"] - hem + OVER),
+        "leg-near": (split, hem - OVER, f["right"] - split, f["bottom"] - hem + OVER),
+    }
+
+
+def scales(spec):
+    """등신 목표를 파츠 배율로 바꾼다.
+
+    전체 키를 원본 그대로 두고 머리만 1/N 로 줄인다. 남은 길이를 상체·다리가
+    같은 비율로 나눠 갖는다. 픽셀을 새로 뽑지 않으므로 3등신이든 7등신이든
+    액세서리는 같은 픽셀이다.
+    """
+    c, f = spec["cuts"], spec["figure"]
+    prop = spec.get("proportions", {})
+    total = f["bottom"] - f["top"]
+    head = c["neck_y"] - f["top"]
+    n = prop.get("target_heads")
+    if not n:
+        return prop.get("head_scale", 1.0), prop.get("limb_scale", 1.0), total / head
+    hs = total / (n * head)
+    rest = (total - total / n) / (total - head)
+    return hs, rest, float(n)
+
+
+def cmd_cut(args):
+    name = args.cast
+    spec = json.loads((CASTS / name / "parts.json").read_text())
+    g, alpha = load_src(spec, name)
+    # 알파를 원본에 먼저 입힌 뒤 자른다 — 그래야 파츠에 배경 사각형이 안 딸려간다
+    g["14"] = {"class_type": "JoinImageWithAlpha",
+               "inputs": {"image": ["10", 0], "alpha": alpha}}
+    boxes = part_boxes(spec)
+    for i, (tag, (x, y, w, h)) in enumerate(boxes.items()):
+        g.update(crop(str(20 + i), ["14", 0], x, y, w, h))
+        g[f"9{i}"] = {"class_type": "SaveImage",
+                      "inputs": {"images": [str(20 + i), 0],
+                                 "filename_prefix": f"part-{name}-{tag}"}}
+    outs = wait(post(g))
+
+    # ComfyUI 는 파일명에 일련번호를 붙인다. 합성 그래프가 고정된 이름으로 읽도록
+    # input/ 에 정리해 둔다. RGBA 를 지키려고 API 업로드 대신 그대로 복사한다.
+    import shutil
+    src, dst = Path.home() / "ComfyUI" / "output", Path.home() / "ComfyUI" / "input"
+    for o in sorted(outs):
+        tag = o.rsplit("_", 2)[0]
+        shutil.copy(src / o, dst / f"{tag}.png")
+        print(f"  {tag}.png")
+
+
+def cmd_play(args):
+    """동작 프레임을 합성한다.
+
+    두 번 렌더한다. ImageBlendAdvance 가 회전·축소한 레이어를 어디에 놓는지
+    닫힌 공식으로 예측해 봤지만 실측과 최대 20px 어긋났다(두 다리 파츠 폭이 달라
+    회전 후 경계 상자가 다르게 자란다). 노드 내부를 추측하는 대신 1패스 결과의
+    발끝 y 를 읽어 그 차이만큼 내려 2패스를 돌린다. 픽셀은 전부 ComfyUI 가
+    만지고 여기서는 좌표 하나만 잰다. 프레임당 2초라 두 번 돌아도 부담이 없다.
+    """
+    name, motion = args.cast, args.motion
+    spec = json.loads((CASTS / name / "parts.json").read_text())
+    mo = json.loads((MOTIONS / f"{motion}.json").read_text())
+    if args.heads:
+        spec.setdefault("proportions", {})["target_heads"] = args.heads
+    W, H = spec.get("canvas", [1024, 1024])
+    c, f = spec["cuts"], spec["figure"]
+    boxes = part_boxes(spec)
+    hs, bs, heads = scales(spec)
+    cx = (f["left"] + f["right"]) / 2.0
+    suffix = f"-{heads:g}h" if args.heads else ""
+
+    # 위에서 아래로 쌓는다. 머리끝을 원래 자리에 두고 목선을 머리 크기로 정하면
+    # 그 아래가 전부 따라온다. 등신이 바뀌어도 키는 그대로다.
+    head_h = c["neck_y"] - f["top"]
+    neck = f["top"] + head_h * hs
+    hem = neck + (c["hem_y"] - c["neck_y"]) * bs
+
+    def graph(fr, drop, i):
+        # 인물에 없는 색(마젠타)으로 칠하고 마지막에 그 색을 알파로 뺀다.
+        # 검정으로 하면 머리카락·구두의 어두운 픽셀까지 같이 빠진다.
+        g = {"1": {"class_type": "EmptyImage",
+                   "inputs": {"width": W, "height": H, "batch_size": 1, "color": 0xFF00FF}}}
+        prev, nid = ["1", 0], 100
+        # 먼 다리 → 가까운 다리 → 상체 → 머리.
+        # 상체가 다리보다 위여야 회전한 다리 윗동이 치마에 가린다.
+        plan = [("leg-far", bs, fr["leg_far"]), ("leg-near", bs, fr["leg_near"]),
+                ("torso", bs, 0.0), ("head", hs, 0.0)]
+        for part, sc, rot in plan:
+            g[str(nid)] = {"class_type": "LoadImage",
+                           "inputs": {"image": f"part-{name}-{part}.png", "upload": "image"}}
+            bx, by, bw, bh = boxes[part]
+            # 파츠의 이음매 행이 원본에서 파츠 윗변으로부터 얼마나 떨어져 있는지.
+            # 겹침(OVER)은 이음매 바깥으로 나간 여유분이라 여기서 빼야 키가 안 늘어난다.
+            seam = {"head": head_h, "torso": OVER,
+                    "leg-far": OVER, "leg-near": OVER}[part]
+            top = {"head": neck, "torso": neck, "leg-far": hem, "leg-near": hem}[part] \
+                - seam * sc
+            x = cx + (bx + bw / 2 - cx) * sc
+            y = top + bh * sc / 2 + drop
+            if part.startswith("leg"):
+                # 회전축을 파츠 윗변(고관절)으로 옮기기 위한 보정
+                r = math.radians(rot)
+                dy = bh * sc / 2
+                x += dy * math.sin(r)
+                y += dy * (math.cos(r) - 1)
+            g.update(layer(str(nid + 2), prev, [str(nid), 0], [str(nid), 1],
+                           rot, x / W * 100.0, y / H * 100.0, sc))
+            prev = [str(nid + 2), 0]
+            nid += 10
+        # 마지막 레이어의 MASK 는 누적 실루엣이 아니라 그 레이어만의 것이라
+        # 알파로 쓰면 머리만 남는다. 키색을 빼는 쪽이 맞다.
+        # 합성 결과는 4채널이고 MaskByColor 는 3채널을 요구하므로 알파를 먼저 뗀다.
+        g["995"] = {"class_type": "ImageRemoveAlpha+", "inputs": {"image": prev}}
+        g["996"] = {"class_type": "LayerMask: MaskByColor",
+                    "inputs": {"image": ["995", 0], "color": "#FF00FF",
+                               "color_in_HEX": "#FF00FF", "threshold": 12,
+                               "fix_gap": 0, "fix_threshold": 0.75, "invert_mask": False}}
+        # 투명해질 자리의 RGB 가 마젠타로 남으면 소비자가 축소·필터링할 때
+        # 자홍색 후광이 번진다. 알파를 붙이기 전에 검정으로 눌러 둔다.
+        g["990"] = {"class_type": "EmptyImage",
+                    "inputs": {"width": W, "height": H, "batch_size": 1, "color": 0}}
+        g["991"] = {"class_type": "InvertMask", "inputs": {"mask": ["996", 0]}}
+        g["992"] = {"class_type": "ImageCompositeMasked",
+                    "inputs": {"destination": ["990", 0], "source": ["995", 0],
+                               "x": 0, "y": 0, "resize_source": False,
+                               "mask": ["991", 0]}}
+        g["998"] = {"class_type": "JoinImageWithAlpha",
+                    "inputs": {"image": ["992", 0], "alpha": ["996", 0]}}
+        g["999"] = {"class_type": "SaveImage",
+                    "inputs": {"images": ["998", 0],
+                               "filename_prefix": f"{name}-{motion}{suffix}-f{i}"}}
+        return g
+
+    def foot_y(fname):
+        from PIL import Image
+        import numpy as np
+        a = np.array(Image.open(Path.home() / "ComfyUI" / "output" / fname))
+        return int(np.where((a[..., 3] > 0).any(1))[0].max())
+
+    ground = f["bottom"]
+    drops = [0.0] * len(mo["frames"])
+    for p in (1, 2):
+        outs = [wait(post(graph(fr, drops[i], i + 1)))[0]
+                for i, fr in enumerate(mo["frames"])]
+        if p == 1:
+            drops = [d + ground - foot_y(o) for d, o in zip(drops, outs)]
+        else:
+            ys = [foot_y(o) for o in outs]
+            print(f"  {heads:g}등신 · {len(outs)}프레임 · "
+                  f"발끝 y {min(ys)}~{max(ys)} (편차 {max(ys) - min(ys)}px)")
+            for i, o in enumerate(outs, 1):
+                print(f"    f{i}: {o}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="파츠 리깅")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("cut");  p.add_argument("cast")
+    p = sub.add_parser("play"); p.add_argument("cast"); p.add_argument("motion")
+    p.add_argument("--heads", type=float, help="목표 등신 (없으면 원본 비율)")
+    a = ap.parse_args()
+    {"cut": cmd_cut, "play": cmd_play}[a.cmd](a)
+
+
+if __name__ == "__main__":
+    main()

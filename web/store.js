@@ -34,7 +34,8 @@
   // ── 패싯 ───────────────────────────────────────────────
   // 각 축은 자산 하나가 그 값을 갖는지 판정하는 함수다. 태깅이 필요 없다.
   const AXES = [
-    { key: 'model', label: '모델', of: (a) => [short(a.recipe?.checkpoint) || '기록 없음'] },
+    { key: 'model', label: '모델', of: (a) => [short(a.recipe?.checkpoint)
+      || (a.recipe?.rig_parts ? '없음 — 파츠 리깅' : '기록 없음')] },
     { key: 'lora', label: 'LORA', of: (a) => [short(a.recipe?.lora) || '없음'] },
     { key: 'size', label: '크기', of: (a) => [`${a.width}×${a.height}`] },
     {
@@ -54,7 +55,9 @@
         if (a.expires_at && Date.parse(a.expires_at) - Date.now() < 7 * DAY) out.push('만료 임박');
         if (a.original === null) out.push('원본 만료됨');
         if (a.recipe?.post?.length) out.push('후처리 있음');
-        out.push(a.recipe?.controlnet ? '포즈 고정(ControlNet)' : '프롬프트만');
+        if (a.alpha) out.push('배경 투명');
+        out.push(a.recipe?.rig_parts ? '파츠 리깅 · 샘플러 없음'
+          : a.recipe?.controlnet ? '포즈 고정(ControlNet)' : '프롬프트만');
         return out;
       },
     },
@@ -117,7 +120,8 @@
   function card(a) {
     const b = el('button', 'card');
     b.type = 'button';
-    const shot = el('span', 'shot');
+    // 투명 배경은 결과물의 일부다 — 체커 바닥으로 그렇다고 알린다
+    const shot = el('span', a.alpha ? 'shot shot--alpha' : 'shot');
     const img = el('img');
     // 애니메이션은 재생되는 것이 결과물이라 그리드에서 바로 돈다 (WebP 가 무한 반복)
     img.src = a.anim || a.thumb;
@@ -131,7 +135,8 @@
 
     const tags = el('span', 'tags');
     const r = a.recipe || {};
-    const list = [`${a.width}×${a.height}`, short(r.checkpoint) || '기록 없음'];
+    const list = [`${a.width}×${a.height}`,
+      short(r.checkpoint) || (r.rig_parts ? '파츠 리깅' : '기록 없음')];
     if (a.kind === 'animation') list.unshift(`${a.frames}프레임 ${a.fps}fps`);
     if (r.lora) list.push('+ ' + short(r.lora));
     for (const t of list) tags.append(el('i', 'tag', t));
@@ -190,7 +195,7 @@
     right.append(x);
     head.append(right);
 
-    const shot = el('div', 'panel-shot');
+    const shot = el('div', a.alpha ? 'panel-shot panel-shot--alpha' : 'panel-shot');
     const img = el('img');
     img.src = a.anim || ((!dead && (a.asset || a.original)) || a.thumb);
     img.alt = a.id;
@@ -203,6 +208,8 @@
       ['STEPS', [r.steps && r.steps + ' steps', r.cfg != null && 'cfg ' + r.cfg].filter(Boolean).join(' · ')],
       ['프레임', a.kind === 'animation' ? `${a.frames}장 · ${a.fps}fps · 무한 반복` : null],
       ['LATENT', r.latent], ['CONTROLNET', short(r.controlnet)],
+      ['파츠', r.rig_parts], ['회전', r.rig_angles], ['등신 배율', r.rig_scale],
+      ['배경', a.alpha ? '투명 (알파 채널)' : null],
       ['POST', (r.post || []).join(' → ')],
       ['만료', dead ? '만료됨' : (a.expires_at ? a.expires_at.slice(0, 10) : '면제 (플래그)')],
     ].filter(([, v]) => v !== undefined && v !== null && v !== '');

@@ -230,7 +230,48 @@ def extract_recipe(graph, save_id):
                 r[key] = txt
         if r["prompt"]:
             break
+    if not samplers:
+        rig_recipe(graph, reach, r)
     return r
+
+
+def rig_recipe(graph, reach, r):
+    """샘플러가 없는 그래프 — 파츠 리깅으로 합성한 프레임이다.
+
+    확산 그래프에는 프롬프트·모델·시드가 이력이지만 리깅에는 그런 것이 없다.
+    무엇을 어떤 각도로 몇 등신에 놓았는지가 이력이다. 여기서 뽑아 두지 않으면
+    스토어에 '생성 기록이 없다'로만 남아 재현도 검색도 안 된다.
+    """
+    parts, angles, scales = [], [], {}
+    for nid in reach:
+        ins = graph[nid].get("inputs", {})
+        ct = graph[nid].get("class_type")
+        if ct == "LoadImage":
+            name = str(ins.get("image", ""))
+            if name.startswith("part-"):
+                parts.append(name[5:].rsplit(".", 1)[0])
+        elif ct.startswith("LayerUtility: ImageBlendAdvance"):
+            rot = ins.get("rotate")
+            if rot:
+                angles.append(round(float(rot), 1))
+            sc = ins.get("scale")
+            if sc not in (None, 1.0):
+                scales.setdefault(round(float(sc), 3), 0)
+                scales[round(float(sc), 3)] += 1
+    if not parts:
+        return
+    src = sorted({p.rsplit("-", 1)[0] if p.rsplit("-", 1)[-1] in ("far", "near") else p
+                  for p in parts})
+    r["rig_parts"] = ", ".join(sorted(parts))
+    r["rig_angles"] = " / ".join(f"{a:+.1f}°" for a in angles) or "0°"
+    if scales:
+        # 배율 두 종이 곧 등신이다 — 머리를 줄인 만큼 몸통·다리가 늘어난다.
+        # 목표 등신 자체는 파일 이름(-3h·-7h)이 쥐고 있어 여기서 되짚지 않는다.
+        lo, hi = min(scales), max(scales)
+        r["rig_scale"] = f"머리 {lo}× · 몸통·다리 {hi}×" if lo != hi else f"{lo}×"
+    r["prompt"] = ("파츠 리깅 — 확산 모델이 그린 기준 포즈 한 장을 "
+                   f"{len(set(parts))}조각으로 나눠 회전·배치했다. 샘플러가 돌지 않아 "
+                   "머리띠·양말·신발이 프레임마다 픽셀 단위로 같다.")
 
 
 def save_nodes(graph):
@@ -293,11 +334,17 @@ def cmd_ingest(args):
         while aid in taken:
             aid, n = f"{base}-{n}", n + 1
 
+        alpha = False
         try:
             with Image.open(path) as im:
                 w, h = im.size
-                thumb = im.convert("RGB")
-                thumb.thumbnail((THUMB_PX, THUMB_PX), Image.LANCZOS)
+                alpha = "A" in im.getbands()
+                # 알파가 있으면 그대로 둔다. 리깅으로 만든 스프라이트는 투명이
+                # 결과물의 일부다. 이진 알파라 LANCZOS 는 가장자리를 번지게 하므로
+                # 그때는 NEAREST 로 격자를 지킨다.
+                thumb = im.convert("RGBA") if "A" in im.getbands() else im.convert("RGB")
+                thumb.thumbnail((THUMB_PX, THUMB_PX),
+                                Image.NEAREST if thumb.mode == "RGBA" else Image.LANCZOS)
                 thumb.save(THUMBS / f"{aid}.webp", "WEBP", quality=72)
         except Exception as e:
             print(f"  건너뜀 {path.name}: {e}")
@@ -327,6 +374,7 @@ def cmd_ingest(args):
             "expires_at": iso(now() + timedelta(days=cfg["retain_days"])),
             "flagged": False,
             "width": w, "height": h, "bytes": path.stat().st_size,
+            "alpha": alpha,
             "thumb": f"thumbs/{aid}.webp",
             "original": f"originals/{aid}.png",
             "recipe": recipe,
@@ -363,28 +411,32 @@ def build_anims(idx, fps):
             continue
         items.sort()
         paths = [CATALOG / a["original"] for _, a in items]
-        frames = [Image.open(p).convert("RGB") for p in paths]
+        raw = [Image.open(p) for p in paths]
+        rgba = any("A" in f.getbands() for f in raw)
+        frames = [f.convert("RGBA" if rgba else "RGB") for f in raw]
 
         webp = ANIMS / f"{name}.webp"
         frames[0].save(webp, "WEBP", save_all=True, append_images=frames[1:],
                        duration=int(1000 / fps), loop=0, quality=80, method=4)
 
         w, h = frames[0].size
-        sheet = Image.new("RGB", (w * len(frames), h))
+        sheet = Image.new("RGBA" if rgba else "RGB", (w * len(frames), h),
+                          (0, 0, 0, 0) if rgba else (0, 0, 0))
         for i, f in enumerate(frames):
             sheet.paste(f, (i * w, 0))
         # 시트는 엔진에 넣는 것이라 무손실. PNG 보다 작은 무손실 WebP 를 쓴다.
         sheet_p = ANIMS / f"{name}-sheet.webp"
         sheet.save(sheet_p, "WEBP", lossless=True, method=5)
 
-        thumb = frames[0].copy(); thumb.thumbnail((THUMB_PX, THUMB_PX), Image.LANCZOS)
+        thumb = frames[0].copy()
+        thumb.thumbnail((THUMB_PX, THUMB_PX), Image.NEAREST if rgba else Image.LANCZOS)
         thumb.save(ANIMS / f"{name}-poster.webp", "WEBP", quality=72)
 
         first = items[0][1]
         out.append({
             "id": name, "kind": "animation",
             "frames": len(frames), "fps": fps,
-            "width": w, "height": h,
+            "width": w, "height": h, "alpha": rgba,
             "anim": f"anims/{name}.webp",
             "sheet": f"anims/{name}-sheet.webp",
             "thumb": f"anims/{name}-poster.webp",
@@ -483,9 +535,10 @@ def make_view(src, dst):
     그림) 무손실로 저장해 격자를 지키고, 그라디언트가 많은 그림만 손실로 줄인다.
     """
     with Image.open(src) as im:
-        im = im.convert("RGB")
+        rgba = "A" in im.getbands()
+        im = im.convert("RGBA" if rgba else "RGB")
         colors = im.getcolors(maxcolors=VIEW_LOSSLESS_COLORS)   # 넘으면 None
-        im.thumbnail((VIEW_PX, VIEW_PX), Image.LANCZOS)
+        im.thumbnail((VIEW_PX, VIEW_PX), Image.NEAREST if rgba else Image.LANCZOS)
         if colors is not None:
             im.save(dst, "WEBP", lossless=True)
         else:
@@ -514,7 +567,7 @@ def cmd_publish(args):
         if t.exists():
             shutil.copy2(t, PUBLIC / "thumbs" / t.name)
         rec = dict(a["recipe"] or {})
-        item = {k: a[k] for k in ("id", "created_at", "width", "height", "bytes")}
+        item = {k: a[k] for k in ("id", "created_at", "width", "height", "bytes", "alpha")}
         item.update(thumb=a["thumb"], recipe=rec, asset=None)   # 로컬 절대경로는 싣지 않는다
         if a.get("original"):
             o = CATALOG / a["original"]
@@ -531,7 +584,7 @@ def cmd_publish(args):
             if src_p.exists():
                 shutil.copy2(src_p, PUBLIC / "anims" / src_p.name)
         anims.append({k: an[k] for k in
-                      ("id","kind","frames","fps","width","height",
+                      ("id","kind","frames","fps","width","height","alpha",
                        "anim","sheet","thumb","created_at","bytes","recipe")})
     for f in ("index.html", "store.css", "store.js"):
         if (WEB / f).exists():

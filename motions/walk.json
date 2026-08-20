@@ -1,0 +1,31 @@
+{
+ "name": "walk",
+ "fps": 10,
+ "note": "접지→하강→통과를 좌우 교대로. 각도는 수직 기준 +가 앞(오른쪽). bounce 는 몸통 상하(%). 캐릭터와 무관해 전 캐릭터가 공유한다.",
+ "frames": [
+  {
+   "leg_near": 14.0,
+   "leg_far": -14.0
+  },
+  {
+   "leg_near": 6.0,
+   "leg_far": -8.0
+  },
+  {
+   "leg_near": -7.0,
+   "leg_far": 5.0
+  },
+  {
+   "leg_near": -14.0,
+   "leg_far": 14.0
+  },
+  {
+   "leg_near": -8.0,
+   "leg_far": 6.0
+  },
+  {
+   "leg_near": 5.0,
+   "leg_far": -7.0
+  }
+ ]
+}

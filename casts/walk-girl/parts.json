@@ -1,0 +1,52 @@
+{
+ "source": "source.png",
+ "bg_rgb": [
+  132,
+  180,
+  250
+ ],
+ "threshold": 100,
+ "figure": {
+  "top": 200,
+  "bottom": 831,
+  "left": 375,
+  "right": 640
+ },
+ "cuts": {
+  "neck_y": 412,
+  "hem_y": 691,
+  "foot_y": 831,
+  "leg_split_x": 511
+ },
+ "note": "hem_y 아래가 종아리+신발(움직임), 위가 body(고정). 팔은 x 로 분리.",
+ "legs": {
+  "far": [
+   448,
+   495
+  ],
+  "near": [
+   528,
+   575
+  ]
+ },
+ "proportions": {
+  "head_scale": 1.0,
+  "limb_scale": 1.0,
+  "target_heads": 4.0,
+  "note": "head_scale 은 body 파츠, limb_scale 은 다리 파츠 배율. 등신은 여기서 정한다."
+ },
+ "canvas": [
+  1024,
+  1024
+ ],
+ "bg_threshold": 20,
+ "shadow": {
+  "rgb": [
+   101,
+   104,
+   186
+  ],
+  "threshold": 45,
+  "top_y": 806
+ }
+}
