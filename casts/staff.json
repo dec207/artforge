@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "note": "일관성은 세 축의 고정에서 온다 — 포즈(스켈레톤 공유), 시드(뷰당 하나), 프롬프트(공통 블록 글자 단위 동일). 캔버스는 SDXL 검증 구간인 832×1216, 최종 저해상 변환은 소비자 몫.",
+  "engine": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "lora": "pixel-art-xl.safetensors",
+    "lora_strength": 1.0,
+    "width": 832, "height": 1216,
+    "steps": 28, "cfg": 7.5,
+    "sampler": "dpmpp_2m", "scheduler": "karras",
+    "controlnet": "openpose-sdxl-xinsir.safetensors",
+    "cn_strength": 0.85, "cn_end": 0.85
+  },
+  "views": {
+    "front": { "pose": "front.png",      "seed": 40219 },
+    "side":  { "pose": "side-right.png", "seed": 61873 }
+  },
+  "positive_template": "pixel art, {who}, east asian office worker, single character alone, full body from head to shoes, standing still, whole figure in frame, small figure with wide margins, limited color palette, clean pixel grid, thick dark outline, completely plain empty flat light grey background, solid single color backdrop, nothing behind the character",
+  "negative": "multiple views, turnaround sheet, sprite sheet, multiple characters, two people, grid, collage, split image, duplicate, cropped, close-up, bust, headshot, cut off legs, brick wall, wall texture, pattern, tiles, architecture, room, interior, background details, scenery, chibi, super deformed, big head, child proportions, blurry, jpeg artifacts, watermark, text, signature, photorealistic, 3d render",
+  "cast": {
+    "m1": "a man in his early 30s, short black hair, white dress shirt, navy tie, dark grey slacks",
+    "m2": "a man in his 40s, glasses, side-parted black hair, charcoal grey suit, light blue shirt",
+    "f1": "a woman in her late 20s, short black bob hair, beige blouse, dark navy skirt",
+    "f2": "a woman in her 30s, black hair in a ponytail, navy blazer, white inner top, grey trousers",
+    "f3": "a woman in her 20s, long straight black hair, light grey cardigan, white blouse, black skirt"
+  }
+}
