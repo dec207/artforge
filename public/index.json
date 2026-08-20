@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated_at": "2026-08-20T05:33:06Z",
+ "generated_at": "2026-08-20T05:42:44Z",
  "public": true,
  "assets": [
   {
@@ -14,8 +14,8 @@
    "anim": "anims/walk-girl-walk.webp",
    "sheet": "anims/walk-girl-walk-sheet.webp",
    "thumb": "anims/walk-girl-walk-poster.webp",
-   "created_at": "2026-08-20T05:27:10Z",
-   "bytes": 114896,
+   "created_at": "2026-08-20T05:40:25Z",
+   "bytes": 93526,
    "recipe": {
     "checkpoint": null,
     "lora": null,
@@ -31,7 +31,7 @@
     "post": [],
     "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
     "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "머리 0.744× · 몸통·다리 1.129×"
+    "rig_scale": "0.744×"
    }
   },
   {
@@ -45,8 +45,8 @@
    "anim": "anims/walk-girl-walk-3h.webp",
    "sheet": "anims/walk-girl-walk-3h-sheet.webp",
    "thumb": "anims/walk-girl-walk-3h-poster.webp",
-   "created_at": "2026-08-20T05:27:35Z",
-   "bytes": 99340,
+   "created_at": "2026-08-20T05:40:50Z",
+   "bytes": 108088,
    "recipe": {
     "checkpoint": null,
     "lora": null,
@@ -62,7 +62,7 @@
     "post": [],
     "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
     "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "머리 0.992× · 몸통·다리 1.004×"
+    "rig_scale": "0.992×"
    }
   },
   {
@@ -76,8 +76,8 @@
    "anim": "anims/walk-girl-walk-5h.webp",
    "sheet": "anims/walk-girl-walk-5h-sheet.webp",
    "thumb": "anims/walk-girl-walk-5h-poster.webp",
-   "created_at": "2026-08-20T05:27:59Z",
-   "bytes": 90688,
+   "created_at": "2026-08-20T05:41:14Z",
+   "bytes": 92306,
    "recipe": {
     "checkpoint": null,
     "lora": null,
@@ -93,7 +93,7 @@
     "post": [],
     "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
     "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "머리 0.595× · 몸통·다리 1.205×"
+    "rig_scale": "0.595×"
    }
   },
   {
@@ -107,8 +107,8 @@
    "anim": "anims/walk-girl-walk-7h.webp",
    "sheet": "anims/walk-girl-walk-7h-sheet.webp",
    "thumb": "anims/walk-girl-walk-7h-poster.webp",
-   "created_at": "2026-08-20T05:28:24Z",
-   "bytes": 115042,
+   "created_at": "2026-08-20T05:41:39Z",
+   "bytes": 99462,
    "recipe": {
     "checkpoint": null,
     "lora": null,
@@ -124,7 +124,7 @@
     "post": [],
     "rig_parts": "walk-girl-head, walk-girl-leg-far, walk-girl-leg-near, walk-girl-torso",
     "rig_angles": "+14.0° / -14.0°",
-    "rig_scale": "머리 0.425× · 몸통·다리 1.291×"
+    "rig_scale": "0.425×"
    }
   }
  ]
